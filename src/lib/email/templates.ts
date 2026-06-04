@@ -93,6 +93,24 @@ export function sellerNotifiedEmail(opts: {
   };
 }
 
+export function counterReceivedEmail(opts: {
+  productName: string;
+  rate: string;
+  unit: string;
+  viewUrl: string;
+}): Tmpl {
+  return {
+    subject: `Counter-offer: ₹${opts.rate}/${opts.unit.toUpperCase()} for ${opts.productName}`,
+    html: layout(
+      'The buyer sent a counter-offer',
+      `<p>The buyer set a single counter rate of <strong>₹${opts.rate}/${opts.unit.toUpperCase()}</strong> for ${opts.productName}.</p>
+       <p>You have 24 hours to Accept, Reject, or submit a Final alternative rate (which cannot exceed your Stage-1 bid).</p>
+       <p style="margin:20px 0">${button(opts.viewUrl, 'Respond to the counter')}</p>`,
+    ),
+    text: `Counter-offer ₹${opts.rate}/${opts.unit} for ${opts.productName}. Respond within 24h: ${opts.viewUrl}`,
+  };
+}
+
 export function stage2UrgencyEmail(opts: {
   productName: string;
   rate: string;

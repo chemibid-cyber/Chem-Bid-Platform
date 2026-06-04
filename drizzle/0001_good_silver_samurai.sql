@@ -1,0 +1,1 @@
+ALTER TABLE "auctions" ADD COLUMN "stage2_urgency_sent" boolean DEFAULT false NOT NULL;

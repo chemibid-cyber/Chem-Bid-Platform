@@ -109,7 +109,7 @@ Execute the 9 prompts in `docs/Chemical-Auction-Build-Prompts.md` **in order**. 
 - [x] Prompt 2 — onboarding + members + catalog/CAS
 - [x] Prompt 3 — auction creation + targeting + network
 - [x] Prompt 4 — Stage-1 blind bidding
-- [ ] Prompt 5 — Stage-2 counter loop
+- [x] Prompt 5 — Stage-2 counter loop
 - [ ] Prompt 6 — closure + leaderboard + dispute + export
 - [ ] Prompt 7 — RLS + DPDP + notifications + security
 - [ ] Prompt 8 — operator console + dashboards + PWA
@@ -202,6 +202,15 @@ Applied `/plan-eng-review` discipline to the decision-complete PRD. No scope cha
 - **CSO pass (daily, OWASP+STRIDE) on the bidding surface:** No 8+/10 exploitable findings. Verified app-layer blind-privacy holds (rank server-only, identity masked, file authz, no XSS sink, only raw `sql` is a column-ref count subquery, cron guarded). Residual = **missing-hardening scheduled for Prompt 7**: Postgres RLS policies + the two-company anon proof, rate limiting, virus scan, explicit 12h session. RLS currently enabled default-deny.
 - **Verified:** typecheck + build (32 routes) + 34 tests green.
 
+### 2026-06-04 — Prompt 5 shipped (Stage-2 single-round counter)
+
+- **Buyer review** (`/auctions/[id]/review`): Stage-1 bids sorted by `stage1_total` asc (numeric column → numeric sort), auction average shown, full seller corporate + contact revealed (post-close), COA download / make-to-order flag. Effective rate column = lower of S1/S2.
+- **Launch Stage-2** (`launchStage2Action`): one counter rate → `stage='stage2'`, `stage2_closes_at = now+24h`, blasts in-app + Resend (`counterReceivedEmail`) to ALL Stage-1 participants (quoted bids). Single round only.
+- **Seller response** (`stage2RespondAction`): Accept (takes the target) / Reject (Stage-1 stands) / Final (alt rate). **Price-drop lock** via `isValidStage2Rate` — a Final rate may never exceed the seller's Stage-1 total (server-rejected). Rendered in `/requests/[id]` when stage2 window open.
+- **All-reject / no-response fallback is automatic:** non-responders keep `stage2_rate = null`; `effectiveTotal()` (lower-of) leaves Stage-1 standing — no auction ever dies on a failed negotiation.
+- **Schema:** added `auctions.stage2_urgency_sent` (migration `0001`) so the **final-2h urgency email fires exactly once**. Cron `/api/cron/stage2-timers` sends `stage2UrgencyEmail` (₹ rate in the SUBJECT, FR-6.3) to non-responders inside the 2h window, then flips the flag. Stage-2 expiry needs no processing (lower-of handles it). Added to `vercel.json`.
+- **Verified:** typecheck + build (34 routes incl. 2 cron) + 34 tests green. Stage-2 price-drop + lower-of already covered by `pricing.test.ts` / `ranking.test.ts`.
+
 ## 10. Blocked / needs human (append-only)
 
 _(empty — record real blockers here; do NOT resolve by violating §2)_
@@ -218,7 +227,7 @@ _(empty — record real blockers here; do NOT resolve by violating §2)_
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **Chemical Auction App** (639 symbols, 1526 relationships, 46 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **Chemical Auction App** (660 symbols, 1622 relationships, 47 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -314,20 +323,18 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 | Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
-| Work in the Requests area (28 symbols) | `.claude/skills/generated/requests/SKILL.md` |
+| Work in the Requests area (27 symbols) | `.claude/skills/generated/requests/SKILL.md` |
+| Work in the Auctions area (22 symbols) | `.claude/skills/generated/auctions/SKILL.md` |
+| Work in the Email area (20 symbols) | `.claude/skills/generated/email/SKILL.md` |
 | Work in the Gst area (18 symbols) | `.claude/skills/generated/gst/SKILL.md` |
-| Work in the Email area (14 symbols) | `.claude/skills/generated/email/SKILL.md` |
+| Work in the [id] area (17 symbols) | `.claude/skills/generated/id/SKILL.md` |
 | Work in the Catalog area (13 symbols) | `.claude/skills/generated/catalog/SKILL.md` |
-| Work in the Auth area (13 symbols) | `.claude/skills/generated/auth/SKILL.md` |
+| Work in the Auth area (12 symbols) | `.claude/skills/generated/auth/SKILL.md` |
 | Work in the Cas area (11 symbols) | `.claude/skills/generated/cas/SKILL.md` |
-| Work in the [id] area (11 symbols) | `.claude/skills/generated/id/SKILL.md` |
-| Work in the Network area (10 symbols) | `.claude/skills/generated/network/SKILL.md` |
 | Work in the App area (10 symbols) | `.claude/skills/generated/app/SKILL.md` |
 | Work in the Auction area (8 symbols) | `.claude/skills/generated/auction/SKILL.md` |
 | Work in the Members area (8 symbols) | `.claude/skills/generated/members/SKILL.md` |
 | Work in the Cluster_2 area (4 symbols) | `.claude/skills/generated/cluster-2/SKILL.md` |
-| Work in the Cluster_5 area (4 symbols) | `.claude/skills/generated/cluster-5/SKILL.md` |
 | Work in the (auth) area (4 symbols) | `.claude/skills/generated/auth-2/SKILL.md` |
-| Work in the Auctions area (4 symbols) | `.claude/skills/generated/auctions/SKILL.md` |
 
 <!-- gitnexus:end -->

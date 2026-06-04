@@ -6,7 +6,7 @@ import { and, eq, isNotNull } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { auctions, bids, blocks } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/session';
-import { computeTotalRate, validateBidPricing } from '@/lib/pricing';
+import { computeTotalRate, validateBidPricing, isValidStage2Rate } from '@/lib/pricing';
 import { rankOf } from '@/lib/ranking';
 import { uploadFile, signedUrl } from '@/lib/storage';
 import { recordAudit, AuditAction } from '@/lib/audit';
@@ -244,4 +244,58 @@ export async function getRequestSpecUrlAction(
   if (!auction?.specFileUrl) return { error: 'No spec file attached.' };
   const url = await signedUrl(auction.specFileUrl);
   return url ? { url } : { error: 'Could not generate a download link.' };
+}
+
+/**
+ * Seller responds to the Stage-2 counter: Accept / Reject / Final alternative.
+ * PRICE-DROP LOCK: a Final rate may never exceed the seller's Stage-1 total.
+ * Reject leaves Stage-1 standing (the leaderboard takes the lower of the two).
+ */
+export async function stage2RespondAction(
+  auctionId: string,
+  action: 'accept' | 'reject' | 'final',
+  finalRateRaw?: string,
+): Promise<BidFormState> {
+  const { user, company } = await requireUser();
+  const bid = await loadSellerBid(auctionId, company.id);
+  if (!bid || bid.stage1Total == null) return { error: 'You did not bid in Stage-1.' };
+
+  const [auction] = await db.select().from(auctions).where(eq(auctions.id, auctionId)).limit(1);
+  if (!auction || auction.stage !== 'stage2') return { error: 'Stage-2 is not active.' };
+  if (auction.stage2ClosesAt && auction.stage2ClosesAt.getTime() <= Date.now()) {
+    return { error: 'The Stage-2 window has closed.' };
+  }
+
+  let stage2Rate: string | null = null;
+  if (action === 'accept') {
+    stage2Rate = auction.stage2Target;
+  } else if (action === 'final') {
+    const rate = Number(finalRateRaw);
+    if (!isValidStage2Rate(rate, Number(bid.stage1Total))) {
+      return { error: `Your final rate must be greater than 0 and at most your Stage-1 total (₹${bid.stage1Total}).` };
+    }
+    stage2Rate = String(rate);
+  }
+  // 'reject' → stage2Rate stays null; Stage-1 stands.
+
+  await db
+    .update(bids)
+    .set({ stage2Action: action, stage2Rate, updatedAt: new Date() })
+    .where(eq(bids.id, bid.id));
+  await recordAudit({
+    actorUserId: user.id,
+    entityType: 'bid',
+    entityId: bid.id,
+    action: AuditAction.Stage2Response,
+    snapshot: { response: action, stage2Rate },
+  });
+  revalidatePath(`/requests/${auctionId}`);
+  return {
+    success:
+      action === 'accept'
+        ? 'You accepted the counter rate.'
+        : action === 'final'
+          ? 'Final rate submitted.'
+          : 'You rejected the counter — your Stage-1 bid stands.',
+  };
 }

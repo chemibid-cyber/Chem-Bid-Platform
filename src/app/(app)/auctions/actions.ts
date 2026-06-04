@@ -3,16 +3,18 @@
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { and, eq, count, inArray } from 'drizzle-orm';
+import { and, eq, count, inArray, isNotNull } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { auctions, registeredPartners, bids, notifications } from '@/lib/db/schema';
+import { auctions, registeredPartners, bids, notifications, users } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/session';
 import { isValidCasFormat } from '@/lib/cas/parse';
-import { validateClosingTime, validateExtension } from '@/lib/auction/timing';
+import { validateClosingTime, validateExtension, stage2CloseTime } from '@/lib/auction/timing';
 import { istLocalToDate } from '@/lib/format';
 import { uploadFile, signedUrl } from '@/lib/storage';
 import { runTargeting } from '@/lib/targeting/run';
 import { recordAudit, AuditAction } from '@/lib/audit';
+import { sendEmail } from '@/lib/email';
+import { counterReceivedEmail } from '@/lib/email/templates';
 
 export type AuctionFormState = { error?: string; success?: string } | null;
 
@@ -245,5 +247,95 @@ export async function getAuctionSpecUrlAction(
   if (!a || a.buyerCompanyId !== company.id) return { error: 'Not found.' };
   if (!a.specFileUrl) return { error: 'No spec file attached.' };
   const url = await signedUrl(a.specFileUrl);
+  return url ? { url } : { error: 'Could not generate a download link.' };
+}
+
+/** Launch Stage-2: ONE counter rate blasted to ALL Stage-1 participants, 24h timer. */
+export async function launchStage2Action(
+  _prev: AuctionFormState,
+  formData: FormData,
+): Promise<AuctionFormState> {
+  const { user, company } = await requireUser();
+  const auctionId = String(formData.get('auctionId') ?? '');
+  const targetRate = Number(formData.get('targetRate') ?? '');
+
+  const [auction] = await db
+    .select()
+    .from(auctions)
+    .where(and(eq(auctions.id, auctionId), eq(auctions.buyerCompanyId, company.id)))
+    .limit(1);
+  if (!auction) return { error: 'Auction not found.' };
+  if (auction.status !== 'awaiting_decision') {
+    return { error: 'Stage-2 can only start after the auction closes with bids.' };
+  }
+  if (auction.stage === 'stage2') return { error: 'Stage-2 is already running.' };
+  if (!Number.isFinite(targetRate) || targetRate <= 0) {
+    return { error: 'Enter a valid counter rate.' };
+  }
+
+  const closesAt = stage2CloseTime();
+  await db
+    .update(auctions)
+    .set({
+      stage: 'stage2',
+      stage2Target: String(targetRate),
+      stage2ClosesAt: closesAt,
+      stage2UrgencySent: false,
+    })
+    .where(eq(auctions.id, auctionId));
+
+  // Blast to ALL Stage-1 participants (those who actually quoted).
+  const participants = await db
+    .select({ sellerUserId: bids.sellerUserId, email: users.email })
+    .from(bids)
+    .innerJoin(users, eq(bids.sellerUserId, users.id))
+    .where(and(eq(bids.auctionId, auctionId), eq(bids.status, 'active'), isNotNull(bids.stage1Total)));
+
+  if (participants.length > 0) {
+    await db.insert(notifications).values(
+      participants.map((p) => ({
+        userId: p.sellerUserId,
+        type: 'auction.stage2',
+        payload: { auctionId, name: auction.name, rate: targetRate, unit: auction.unit },
+      })),
+    );
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
+    await Promise.all(
+      participants.map((p) => {
+        const tmpl = counterReceivedEmail({
+          productName: auction.name,
+          rate: String(targetRate),
+          unit: auction.unit,
+          viewUrl: `${appUrl}/requests/${auctionId}`,
+        });
+        return sendEmail({ to: p.email, subject: tmpl.subject, html: tmpl.html, text: tmpl.text });
+      }),
+    );
+  }
+
+  await recordAudit({
+    actorUserId: user.id,
+    entityType: 'auction',
+    entityId: auctionId,
+    action: AuditAction.Stage2Launched,
+    snapshot: { targetRate, participants: participants.length, closesAt: closesAt.toISOString() },
+  });
+
+  revalidatePath(`/auctions/${auctionId}/review`);
+  return { success: `Counter sent to ${participants.length} participant(s).` };
+}
+
+/** Buyer downloads a bidder's COA (only for their own auction's bids). */
+export async function getBidCoaUrlAction(bidId: string): Promise<{ url?: string; error?: string }> {
+  const { company } = await requireUser();
+  const [row] = await db
+    .select({ coaFileUrl: bids.coaFileUrl, buyerCompanyId: auctions.buyerCompanyId })
+    .from(bids)
+    .innerJoin(auctions, eq(bids.auctionId, auctions.id))
+    .where(eq(bids.id, bidId))
+    .limit(1);
+  if (!row || row.buyerCompanyId !== company.id) return { error: 'Not found.' };
+  if (!row.coaFileUrl) return { error: 'No COA attached (or make-to-order).' };
+  const url = await signedUrl(row.coaFileUrl);
   return url ? { url } : { error: 'Could not generate a download link.' };
 }

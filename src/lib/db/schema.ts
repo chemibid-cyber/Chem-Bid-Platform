@@ -191,6 +191,7 @@ export const auctions = pgTable(
     extendedOnce: boolean('extended_once').notNull().default(false),
     stage2Target: numeric('stage2_target'),
     stage2ClosesAt: timestamp('stage2_closes_at', { withTimezone: true }),
+    stage2UrgencySent: boolean('stage2_urgency_sent').notNull().default(false),
     awaitingSince: timestamp('awaiting_since', { withTimezone: true }),
     createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
   },

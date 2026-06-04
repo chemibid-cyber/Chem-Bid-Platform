@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
-    { "path": "/api/cron/close-auctions", "schedule": "*/5 * * * *" }
+    { "path": "/api/cron/close-auctions", "schedule": "*/5 * * * *" },
+    { "path": "/api/cron/stage2-timers", "schedule": "*/5 * * * *" }
   ]
 }

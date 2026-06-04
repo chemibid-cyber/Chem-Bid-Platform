@@ -18,6 +18,7 @@ import {
 } from './gate-actions';
 import { BidForm } from './bid-form';
 import { RankWidget } from './rank-widget';
+import { Stage2Respond } from './stage2-respond';
 
 export const metadata = { title: 'Requirement' };
 
@@ -45,6 +46,10 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
 
   const accepted = bid.gateState === 'accepted';
   const open = auction.status === 'active';
+  const stage2Active =
+    auction.stage === 'stage2' &&
+    auction.stage2ClosesAt != null &&
+    auction.stage2ClosesAt.getTime() > Date.now();
 
   // Buyer identity is revealed only AFTER this seller accepts (or post-close).
   let buyerName = 'A verified buyer';
@@ -135,14 +140,32 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
         </CardContent>
       </Card>
 
+      {/* Stage-2 counter response */}
+      {stage2Active && bid.stage1Total ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Stage-2 counter-offer</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Stage2Respond
+              auctionId={auction.id}
+              targetRate={String(auction.stage2Target ?? '')}
+              stage1Total={String(bid.stage1Total)}
+              unit={UNIT_LABEL[auction.unit] ?? auction.unit}
+              existing={bid.stage2Action}
+            />
+          </CardContent>
+        </Card>
+      ) : null}
+
       {/* Gate / bid */}
-      {!open ? (
+      {!open && !stage2Active ? (
         <Alert>
           <AlertDescription>
             This auction is closed for bidding{bid.stage1Total ? ' — your final bid is on record.' : '.'}
           </AlertDescription>
         </Alert>
-      ) : !accepted && bid.gateState !== 'blocked' ? (
+      ) : open && !accepted && bid.gateState !== 'blocked' ? (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -155,7 +178,7 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
             <BlockControls auctionId={auction.id} />
           </CardContent>
         </Card>
-      ) : accepted ? (
+      ) : open && accepted ? (
         <>
           {auction.blind && bid.stage1Total ? <RankWidget auctionId={auction.id} /> : null}
           <Card>
