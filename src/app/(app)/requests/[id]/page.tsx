@@ -19,6 +19,7 @@ import {
 import { BidForm } from './bid-form';
 import { RankWidget } from './rank-widget';
 import { Stage2Respond } from './stage2-respond';
+import { ReportButton } from '@/components/app/report-button';
 
 export const metadata = { title: 'Requirement' };
 
@@ -125,6 +126,7 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
               Completion score {buyerScore}
             </Badge>
           ) : null}
+          {accepted ? <ReportButton companyId={auction.buyerCompanyId} label="Report buyer" /> : null}
         </CardContent>
       </Card>
 

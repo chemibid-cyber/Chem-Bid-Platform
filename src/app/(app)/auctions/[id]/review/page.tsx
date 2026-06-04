@@ -16,6 +16,7 @@ import { formatRate, timeRemaining, UNIT_LABEL, PAYMENT_TERMS_LABEL } from '@/li
 import { Stage2LaunchForm } from './stage2-launch-form';
 import { CoaDownload } from './coa-download';
 import { ConfirmDealForm, BlockSellerButton } from './settle-actions';
+import { ReportButton } from '@/components/app/report-button';
 
 export const metadata = { title: 'Review bids' };
 
@@ -238,12 +239,15 @@ export default async function ReviewPage({
                   ) : (
                     <Badge variant="secondary">No COA</Badge>
                   )}
-                  {auction.status === 'awaiting_decision' ? (
-                    <div className="ml-auto flex items-center gap-2">
-                      <BlockSellerButton auctionId={auction.id} sellerCompanyId={r.sellerCompanyId} />
-                      <ConfirmDealForm auctionId={auction.id} bidId={r.bidId} sellerName={r.sellerName} />
-                    </div>
-                  ) : null}
+                  <div className="ml-auto flex items-center gap-2">
+                    <ReportButton companyId={r.sellerCompanyId} label="Report seller" />
+                    {auction.status === 'awaiting_decision' ? (
+                      <>
+                        <BlockSellerButton auctionId={auction.id} sellerCompanyId={r.sellerCompanyId} />
+                        <ConfirmDealForm auctionId={auction.id} bidId={r.bidId} sellerName={r.sellerName} />
+                      </>
+                    ) : null}
+                  </div>
                 </div>
               </CardContent>
             </Card>

@@ -6,6 +6,7 @@ import { Download, Loader2 } from 'lucide-react';
 import {
   extendAuctionAction,
   cancelAuctionAction,
+  cloneAuctionAction,
   getAuctionSpecUrlAction,
   type AuctionFormState,
 } from '../actions';
@@ -58,6 +59,16 @@ export function CancelButton({ auctionId }: { auctionId: string }) {
       </Button>
       {error ? <p className="text-xs text-destructive">{error}</p> : null}
     </div>
+  );
+}
+
+export function CloneButton({ auctionId }: { auctionId: string }) {
+  const [pending, start] = useTransition();
+  return (
+    <Button variant="default" size="sm" disabled={pending} onClick={() => start(() => void cloneAuctionAction(auctionId))}>
+      {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
+      Clone &amp; relist
+    </Button>
   );
 }
 

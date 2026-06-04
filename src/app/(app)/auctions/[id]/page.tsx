@@ -12,7 +12,7 @@ import { cn } from '@/lib/utils';
 import { formatIST, timeRemaining, UNIT_LABEL } from '@/lib/format';
 import { auctionStatusMeta } from '@/lib/auction/status';
 import { ROLE_LABEL } from '@/lib/catalog/constants';
-import { ExtendForm, CancelButton, SpecDownloadButton } from './auction-controls';
+import { ExtendForm, CancelButton, CloneButton, SpecDownloadButton } from './auction-controls';
 
 export const metadata = { title: 'Auction' };
 
@@ -125,6 +125,15 @@ export default async function AuctionDetailPage({
                 ? 'Bids are sealed in blind mode — totals are revealed when the auction closes.'
                 : 'Bids will be sortable once the auction closes.'}
             </p>
+          ) : auction.status === 'unsuccessful' || auction.status === 'cancelled' ? (
+            <div className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                {auction.status === 'unsuccessful'
+                  ? 'This requirement closed with no bids.'
+                  : 'This auction was cancelled.'}
+              </p>
+              <CloneButton auctionId={auction.id} />
+            </div>
           ) : (
             <Link href={`/auctions/${auction.id}/review`} className={cn(buttonVariants())}>
               Review bids &amp; settle
