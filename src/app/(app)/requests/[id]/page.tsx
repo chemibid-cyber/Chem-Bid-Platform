@@ -4,7 +4,7 @@ import { and, eq } from 'drizzle-orm';
 import { Lock, Building2 } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
 import { db } from '@/lib/db';
-import { auctions, bids, companies, users } from '@/lib/db/schema';
+import { auctions, bids, companies, users, deals } from '@/lib/db/schema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -50,6 +50,12 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
     auction.stage === 'stage2' &&
     auction.stage2ClosesAt != null &&
     auction.stage2ClosesAt.getTime() > Date.now();
+
+  let wonDealId: string | null = null;
+  if (bid.status === 'won') {
+    const [deal] = await db.select({ id: deals.id }).from(deals).where(eq(deals.bidId, bid.id)).limit(1);
+    wonDealId = deal?.id ?? null;
+  }
 
   // Buyer identity is revealed only AFTER this seller accepts (or post-close).
   let buyerName = 'A verified buyer';
@@ -139,6 +145,22 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
           </dl>
         </CardContent>
       </Card>
+
+      {/* Deal won */}
+      {bid.status === 'won' ? (
+        <Alert variant="success">
+          <AlertTitle>You won this deal</AlertTitle>
+          <AlertDescription>
+            {wonDealId ? (
+              <Link href={`/deals/${wonDealId}`} className="font-medium underline">
+                View the Deal Confirmation Record
+              </Link>
+            ) : (
+              'The buyer confirmed the deal with you.'
+            )}
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {/* Stage-2 counter response */}
       {stage2Active && bid.stage1Total ? (

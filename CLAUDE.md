@@ -110,7 +110,7 @@ Execute the 9 prompts in `docs/Chemical-Auction-Build-Prompts.md` **in order**. 
 - [x] Prompt 3 — auction creation + targeting + network
 - [x] Prompt 4 — Stage-1 blind bidding
 - [x] Prompt 5 — Stage-2 counter loop
-- [ ] Prompt 6 — closure + leaderboard + dispute + export
+- [x] Prompt 6 — closure + leaderboard + dispute + export
 - [ ] Prompt 7 — RLS + DPDP + notifications + security
 - [ ] Prompt 8 — operator console + dashboards + PWA
 - [ ] Security audit (OWASP + STRIDE) green
@@ -211,6 +211,15 @@ Applied `/plan-eng-review` discipline to the decision-complete PRD. No scope cha
 - **Schema:** added `auctions.stage2_urgency_sent` (migration `0001`) so the **final-2h urgency email fires exactly once**. Cron `/api/cron/stage2-timers` sends `stage2UrgencyEmail` (₹ rate in the SUBJECT, FR-6.3) to non-responders inside the 2h window, then flips the flag. Stage-2 expiry needs no processing (lower-of handles it). Added to `vercel.json`.
 - **Verified:** typecheck + build (34 routes incl. 2 cron) + 34 tests green. Stage-2 price-drop + lower-of already covered by `pricing.test.ts` / `ranking.test.ts`.
 
+### 2026-06-04 — Prompt 6 shipped (closure, leaderboard, DCR, disputes, export)
+
+- **Super-comparison leaderboard** (review page): rank by `effectiveTotal` (lower of S1/S2), avg shown, full seller corporate + contacts. Per-card **Confirm deal** + **Block seller (this CAS)** while `awaiting_decision`; 🔴 Blocked tag for blocked sellers (bids retained).
+- **Deal Confirmation Record** (`confirmDealAction`, transactional): winner `won`, others `lost`, `deals` row, auction `closed`. **Both parties emailed identical confirmations** (`dealConfirmationEmail`) stating *mutual intent under signup T&Cs* — the word "legally binding" appears NOWHERE; every "enforceable" mention explicitly negates it (grep-verified). `/deals/[id]` renders the record (buyer or seller of it).
+- **Disputes** (`raiseDisputeAction`, either party): inserts `disputes` row + flips deal→`disputed` + audits `DealDisputed`. **Append-only — the deal is never deleted.** Optional evidence upload.
+- **Export** (`/api/export/auction/[id]?format=pdf|csv`): buyer sees all bids, a participant seller sees only their row, anyone else 403. PDF via `pdf-lib` (standard fonts can't encode ₹ → amounts labelled `INR`). Audited.
+- **Awaiting-decision cap** cron (`/api/cron/awaiting-cap`, daily 02:00): `awaiting_decision` >14d → `closed` (bids preserved). vercel.json updated (3 crons).
+- **Verified:** typecheck + build (38 routes) + 34 tests green.
+
 ## 10. Blocked / needs human (append-only)
 
 _(empty — record real blockers here; do NOT resolve by violating §2)_
@@ -227,7 +236,7 @@ _(empty — record real blockers here; do NOT resolve by violating §2)_
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **Chemical Auction App** (660 symbols, 1622 relationships, 47 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **Chemical Auction App** (699 symbols, 1757 relationships, 50 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -323,18 +332,21 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 | Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
-| Work in the Requests area (27 symbols) | `.claude/skills/generated/requests/SKILL.md` |
-| Work in the Auctions area (22 symbols) | `.claude/skills/generated/auctions/SKILL.md` |
-| Work in the Email area (20 symbols) | `.claude/skills/generated/email/SKILL.md` |
+| Work in the Requests area (29 symbols) | `.claude/skills/generated/requests/SKILL.md` |
+| Work in the Email area (19 symbols) | `.claude/skills/generated/email/SKILL.md` |
+| Work in the [id] area (19 symbols) | `.claude/skills/generated/id/SKILL.md` |
 | Work in the Gst area (18 symbols) | `.claude/skills/generated/gst/SKILL.md` |
-| Work in the [id] area (17 symbols) | `.claude/skills/generated/id/SKILL.md` |
+| Work in the Network area (14 symbols) | `.claude/skills/generated/network/SKILL.md` |
 | Work in the Catalog area (13 symbols) | `.claude/skills/generated/catalog/SKILL.md` |
-| Work in the Auth area (12 symbols) | `.claude/skills/generated/auth/SKILL.md` |
+| Work in the Auctions area (11 symbols) | `.claude/skills/generated/auctions/SKILL.md` |
 | Work in the Cas area (11 symbols) | `.claude/skills/generated/cas/SKILL.md` |
 | Work in the App area (10 symbols) | `.claude/skills/generated/app/SKILL.md` |
 | Work in the Auction area (8 symbols) | `.claude/skills/generated/auction/SKILL.md` |
 | Work in the Members area (8 symbols) | `.claude/skills/generated/members/SKILL.md` |
+| Work in the (auth) area (7 symbols) | `.claude/skills/generated/auth/SKILL.md` |
+| Work in the Export area (6 symbols) | `.claude/skills/generated/export/SKILL.md` |
+| Work in the Auth area (6 symbols) | `.claude/skills/generated/auth-2/SKILL.md` |
 | Work in the Cluster_2 area (4 symbols) | `.claude/skills/generated/cluster-2/SKILL.md` |
-| Work in the (auth) area (4 symbols) | `.claude/skills/generated/auth-2/SKILL.md` |
+| Work in the Cluster_5 area (4 symbols) | `.claude/skills/generated/cluster-5/SKILL.md` |
 
 <!-- gitnexus:end -->

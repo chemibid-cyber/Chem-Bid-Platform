@@ -1,21 +1,31 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { and, eq, asc, isNotNull } from 'drizzle-orm';
+import { and, eq, asc, isNotNull, inArray } from 'drizzle-orm';
 import { Building2 } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
 import { db } from '@/lib/db';
-import { auctions, bids, companies, users } from '@/lib/db/schema';
+import { auctions, bids, companies, users, blocks, deals } from '@/lib/db/schema';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import { averageTotal, effectiveTotal } from '@/lib/ranking';
 import { formatRate, timeRemaining, UNIT_LABEL, PAYMENT_TERMS_LABEL } from '@/lib/format';
 import { Stage2LaunchForm } from './stage2-launch-form';
 import { CoaDownload } from './coa-download';
+import { ConfirmDealForm, BlockSellerButton } from './settle-actions';
 
 export const metadata = { title: 'Review bids' };
 
-export default async function ReviewPage({ params }: { params: { id: string } }) {
+export default async function ReviewPage({
+  params,
+  searchParams,
+}: {
+  params: { id: string };
+  searchParams: { confirmed?: string };
+}) {
   const { company } = await requireUser();
 
   const [auction] = await db
@@ -51,15 +61,45 @@ export default async function ReviewPage({ params }: { params: { id: string } })
     .innerJoin(companies, eq(bids.sellerCompanyId, companies.id))
     .innerJoin(users, eq(bids.sellerUserId, users.id))
     .where(
-      and(eq(bids.auctionId, auction.id), isNotNull(bids.stage1Total), eq(bids.status, 'active')),
+      and(
+        eq(bids.auctionId, auction.id),
+        isNotNull(bids.stage1Total),
+        inArray(bids.status, ['active', 'won', 'lost']),
+      ),
     )
-    .orderBy(asc(bids.stage1Total), asc(bids.createdAt));
+    .orderBy(asc(bids.stage1Total));
+
+  // Super-comparison: rank by the LOWER of Stage-1 / Stage-2 (effective) total.
+  const ranked = rows
+    .map((r) => ({
+      ...r,
+      effective: effectiveTotal(Number(r.stage1Total), r.stage2Rate ? Number(r.stage2Rate) : null),
+    }))
+    .sort((a, b) => a.effective - b.effective || Number(a.stage1Total) - Number(b.stage1Total));
+
+  // Sellers this buyer has blocked for this CAS (show a tag; bids retained).
+  const blockedRows = await db
+    .select({ blockedCompanyId: blocks.blockedCompanyId, scope: blocks.scope, casNumber: blocks.casNumber })
+    .from(blocks)
+    .where(eq(blocks.blockerCompanyId, company.id));
+  const blocked = new Set(
+    blockedRows
+      .filter((b) => b.scope === 'all' || b.casNumber === auction.casNumber)
+      .map((b) => b.blockedCompanyId),
+  );
 
   const unit = UNIT_LABEL[auction.unit] ?? auction.unit;
   const avg = averageTotal(rows.map((r) => Number(r.stage1Total)));
-  const lowest = rows[0]?.stage1Total ?? '';
+  const lowest = ranked[0]?.stage1Total ?? '';
   const inStage2 = auction.stage === 'stage2';
   const stage2Open = inStage2 && auction.stage2ClosesAt && auction.stage2ClosesAt.getTime() > Date.now();
+  const closed = auction.status === 'closed';
+
+  let dealId: string | null = null;
+  if (closed) {
+    const [deal] = await db.select({ id: deals.id }).from(deals).where(eq(deals.auctionId, auction.id)).limit(1);
+    dealId = deal?.id ?? null;
+  }
 
   return (
     <div className="mx-auto max-w-4xl space-y-5">
@@ -70,48 +110,63 @@ export default async function ReviewPage({ params }: { params: { id: string } })
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Review bids — {auction.name}</h1>
         <p className="text-muted-foreground">
-          {rows.length} bid{rows.length === 1 ? '' : 's'} · average total ₹{formatRate(avg)}/{unit}
-          {inStage2 ? ' · Stage-2 in progress' : ''}
+          {rows.length} bid{rows.length === 1 ? '' : 's'} · average total INR {formatRate(avg)}/{unit}
+          {inStage2 && !closed ? ' · Stage-2 in progress' : ''}
         </p>
       </div>
 
-      {/* Stage-2 control */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Stage-2 counter (single round, all participants)</CardTitle>
-          <CardDescription>
-            Optional. Send one counter rate to every bidder for a 24-hour round, or settle directly
-            from the Stage-1 bids below.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {!inStage2 ? (
-            rows.length > 0 ? (
-              <Stage2LaunchForm auctionId={auction.id} unit={unit} lowest={String(lowest)} />
-            ) : (
-              <p className="text-sm text-muted-foreground">No bids to counter.</p>
-            )
-          ) : (
-            <div className="space-y-1 text-sm">
-              <p>
-                Counter sent: <span className="font-semibold">₹{formatRate(auction.stage2Target)}/{unit}</span>
-              </p>
-              <p className="text-muted-foreground">
-                {stage2Open
-                  ? `Responses close in ${timeRemaining(auction.stage2ClosesAt!)}.`
-                  : 'Stage-2 responses are closed. Settle using the lower of each seller’s Stage-1 / Stage-2 rate.'}
-              </p>
-            </div>
-          )}
-        </CardContent>
-      </Card>
+      {searchParams.confirmed || closed ? (
+        <Alert variant="success">
+          <AlertDescription>
+            Deal confirmed and the auction is closed.{' '}
+            {dealId ? (
+              <Link href={`/deals/${dealId}`} className="font-medium underline">
+                View the Deal Confirmation Record
+              </Link>
+            ) : null}
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
-      {/* Bids, sorted lowest Stage-1 total first */}
+      {/* Stage-2 control (hidden once closed) */}
+      {!closed ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Stage-2 counter (single round, all participants)</CardTitle>
+            <CardDescription>
+              Optional. Send one counter rate to every bidder for 24 hours, or settle directly from
+              the leaderboard below (sorted by the lower of each seller&apos;s Stage-1 / Stage-2 rate).
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {!inStage2 ? (
+              ranked.length > 0 ? (
+                <Stage2LaunchForm auctionId={auction.id} unit={unit} lowest={String(lowest)} />
+              ) : (
+                <p className="text-sm text-muted-foreground">No bids to counter.</p>
+              )
+            ) : (
+              <div className="space-y-1 text-sm">
+                <p>
+                  Counter sent: <span className="font-semibold">INR {formatRate(auction.stage2Target)}/{unit}</span>
+                </p>
+                <p className="text-muted-foreground">
+                  {stage2Open
+                    ? `Responses close in ${timeRemaining(auction.stage2ClosesAt!)}.`
+                    : 'Stage-2 responses are closed. Confirm a winner below.'}
+                </p>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {/* Leaderboard */}
       <div className="space-y-3">
-        {rows.map((r, i) => {
-          const eff = effectiveTotal(Number(r.stage1Total), r.stage2Rate ? Number(r.stage2Rate) : null);
+        {ranked.map((r, i) => {
+          const isWinner = r.status === 'won';
           return (
-            <Card key={r.bidId}>
+            <Card key={r.bidId} className={isWinner ? 'border-success' : undefined}>
               <CardContent className="space-y-3 py-4">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
@@ -122,6 +177,11 @@ export default async function ReviewPage({ params }: { params: { id: string } })
                       <div className="flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-muted-foreground" />
                         <span className="font-semibold">{r.sellerName}</span>
+                        {isWinner ? <Badge variant="success">Winner</Badge> : null}
+                        {r.status === 'lost' ? <Badge variant="secondary">Not selected</Badge> : null}
+                        {blocked.has(r.sellerCompanyId) ? (
+                          <Badge variant="destructive">🔴 Blocked</Badge>
+                        ) : null}
                       </div>
                       <p className="text-sm text-muted-foreground">
                         {r.contactFirst} {r.contactLast}
@@ -131,7 +191,7 @@ export default async function ReviewPage({ params }: { params: { id: string } })
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold">₹{formatRate(eff)}/{unit}</p>
+                    <p className="text-lg font-bold">INR {formatRate(r.effective)}/{unit}</p>
                     <p className="text-xs text-muted-foreground">effective (lower of S1/S2)</p>
                   </div>
                 </div>
@@ -141,9 +201,9 @@ export default async function ReviewPage({ params }: { params: { id: string } })
                 <div className="grid gap-3 text-sm sm:grid-cols-4">
                   <div>
                     <p className="text-xs uppercase text-muted-foreground">Stage-1 total</p>
-                    <p className="font-medium">₹{formatRate(r.stage1Total)}/{unit}</p>
+                    <p className="font-medium">INR {formatRate(r.stage1Total)}/{unit}</p>
                     <p className="text-xs text-muted-foreground">
-                      basic ₹{formatRate(r.stage1Basic)} + freight ₹{formatRate(r.stage1Freight)}
+                      basic {formatRate(r.stage1Basic)} + freight {formatRate(r.stage1Freight)}
                     </p>
                   </div>
                   <div>
@@ -158,12 +218,12 @@ export default async function ReviewPage({ params }: { params: { id: string } })
                     <p className="text-xs uppercase text-muted-foreground">Stage-2</p>
                     <p className="font-medium">
                       {r.stage2Action === 'accept'
-                        ? `Accepted ₹${formatRate(auction.stage2Target)}`
+                        ? `Accepted ${formatRate(auction.stage2Target)}`
                         : r.stage2Action === 'final'
-                          ? `Final ₹${formatRate(r.stage2Rate)}`
+                          ? `Final ${formatRate(r.stage2Rate)}`
                           : r.stage2Action === 'reject'
                             ? 'Rejected'
-                            : inStage2
+                            : inStage2 && !closed
                               ? 'No response'
                               : '—'}
                     </p>
@@ -172,18 +232,30 @@ export default async function ReviewPage({ params }: { params: { id: string } })
 
                 <div className="flex flex-wrap items-center gap-2">
                   {r.coaOnDispatch ? (
-                    <Badge variant="warning">COA on dispatch (make-to-order)</Badge>
+                    <Badge variant="warning">COA on dispatch (MTO)</Badge>
                   ) : r.coaFileUrl ? (
                     <CoaDownload bidId={r.bidId} />
                   ) : (
                     <Badge variant="secondary">No COA</Badge>
                   )}
+                  {auction.status === 'awaiting_decision' ? (
+                    <div className="ml-auto flex items-center gap-2">
+                      <BlockSellerButton auctionId={auction.id} sellerCompanyId={r.sellerCompanyId} />
+                      <ConfirmDealForm auctionId={auction.id} bidId={r.bidId} sellerName={r.sellerName} />
+                    </div>
+                  ) : null}
                 </div>
               </CardContent>
             </Card>
           );
         })}
       </div>
+
+      {closed && dealId ? (
+        <Link href={`/deals/${dealId}`} className={cn(buttonVariants({ variant: 'outline' }))}>
+          View Deal Confirmation Record &amp; export
+        </Link>
+      ) : null}
     </div>
   );
 }

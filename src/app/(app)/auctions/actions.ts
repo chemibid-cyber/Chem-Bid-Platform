@@ -3,18 +3,28 @@
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { and, eq, count, inArray, isNotNull } from 'drizzle-orm';
+import { and, eq, count, inArray, isNotNull, ne } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { auctions, registeredPartners, bids, notifications, users } from '@/lib/db/schema';
+import {
+  auctions,
+  registeredPartners,
+  bids,
+  notifications,
+  users,
+  companies,
+  deals,
+  blocks,
+} from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/session';
 import { isValidCasFormat } from '@/lib/cas/parse';
 import { validateClosingTime, validateExtension, stage2CloseTime } from '@/lib/auction/timing';
-import { istLocalToDate } from '@/lib/format';
+import { istLocalToDate, PAYMENT_TERMS_LABEL } from '@/lib/format';
 import { uploadFile, signedUrl } from '@/lib/storage';
 import { runTargeting } from '@/lib/targeting/run';
+import { effectiveTotal } from '@/lib/ranking';
 import { recordAudit, AuditAction } from '@/lib/audit';
 import { sendEmail } from '@/lib/email';
-import { counterReceivedEmail } from '@/lib/email/templates';
+import { counterReceivedEmail, dealConfirmationEmail } from '@/lib/email/templates';
 
 export type AuctionFormState = { error?: string; success?: string } | null;
 
@@ -338,4 +348,134 @@ export async function getBidCoaUrlAction(bidId: string): Promise<{ url?: string;
   if (!row.coaFileUrl) return { error: 'No COA attached (or make-to-order).' };
   const url = await signedUrl(row.coaFileUrl);
   return url ? { url } : { error: 'Could not generate a download link.' };
+}
+
+/**
+ * Confirm a single winner → Deal Confirmation Record (NOT "legally binding").
+ * Winner = won, others = lost, deal row created, auction locked. Both parties
+ * emailed identical confirmations stating mutual intent under the signup T&Cs.
+ */
+export async function confirmDealAction(
+  _prev: AuctionFormState,
+  formData: FormData,
+): Promise<AuctionFormState> {
+  const { user, company } = await requireUser();
+  const auctionId = String(formData.get('auctionId') ?? '');
+  const bidId = String(formData.get('bidId') ?? '');
+
+  const [auction] = await db
+    .select()
+    .from(auctions)
+    .where(and(eq(auctions.id, auctionId), eq(auctions.buyerCompanyId, company.id)))
+    .limit(1);
+  if (!auction) return { error: 'Auction not found.' };
+  if (auction.status !== 'awaiting_decision') return { error: 'This auction is not awaiting a decision.' };
+
+  const [winner] = await db
+    .select()
+    .from(bids)
+    .where(and(eq(bids.id, bidId), eq(bids.auctionId, auctionId), isNotNull(bids.stage1Total)))
+    .limit(1);
+  if (!winner) return { error: 'That bid is not eligible.' };
+
+  const finalTotal = effectiveTotal(
+    Number(winner.stage1Total),
+    winner.stage2Rate ? Number(winner.stage2Rate) : null,
+  );
+
+  let dealId = '';
+  await db.transaction(async (tx) => {
+    await tx.update(bids).set({ status: 'won', updatedAt: new Date() }).where(eq(bids.id, winner.id));
+    await tx
+      .update(bids)
+      .set({ status: 'lost', updatedAt: new Date() })
+      .where(
+        and(eq(bids.auctionId, auctionId), ne(bids.id, winner.id), eq(bids.status, 'active'), isNotNull(bids.stage1Total)),
+      );
+    const [deal] = await tx
+      .insert(deals)
+      .values({
+        auctionId,
+        bidId: winner.id,
+        buyerCompanyId: company.id,
+        sellerCompanyId: winner.sellerCompanyId,
+        finalTotal: String(finalTotal),
+        paymentTerms: winner.paymentTerms,
+        leadTimeDays: winner.leadTimeDays,
+        status: 'confirmed',
+      })
+      .returning();
+    dealId = deal?.id ?? '';
+    await tx.update(auctions).set({ status: 'closed', stage: 'closed' }).where(eq(auctions.id, auctionId));
+    await tx.insert(notifications).values([
+      { userId: winner.sellerUserId, type: 'deal.won', payload: { auctionId, dealId, name: auction.name } },
+      { userId: user.id, type: 'deal.confirmed', payload: { auctionId, dealId, name: auction.name } },
+    ]);
+  });
+
+  await recordAudit({
+    actorUserId: user.id,
+    entityType: 'deal',
+    entityId: dealId,
+    action: AuditAction.DealConfirmed,
+    snapshot: { auctionId, winningBid: winner.id, finalTotal },
+  });
+
+  // Email BOTH parties identical confirmations.
+  const [sellerCompany] = await db
+    .select({ legalName: companies.legalName })
+    .from(companies)
+    .where(eq(companies.id, winner.sellerCompanyId))
+    .limit(1);
+  const [sellerUser] = await db
+    .select({ email: users.email })
+    .from(users)
+    .where(eq(users.id, winner.sellerUserId))
+    .limit(1);
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
+  const tncUrl = `${appUrl}/terms`;
+  const common = {
+    productName: auction.name,
+    quantity: String(auction.quantity),
+    unit: auction.unit,
+    finalTotal: String(finalTotal),
+    paymentTerms: winner.paymentTerms ? PAYMENT_TERMS_LABEL[winner.paymentTerms] ?? winner.paymentTerms : '—',
+    leadTimeDays: winner.leadTimeDays,
+    tncUrl,
+  };
+  const buyerEmail = dealConfirmationEmail({ ...common, counterpartyName: sellerCompany?.legalName ?? 'the seller' });
+  const sellerEmail = dealConfirmationEmail({ ...common, counterpartyName: company.legalName });
+  await sendEmail({ to: user.email, subject: buyerEmail.subject, html: buyerEmail.html, text: buyerEmail.text });
+  if (sellerUser?.email) {
+    await sendEmail({ to: sellerUser.email, subject: sellerEmail.subject, html: sellerEmail.html, text: sellerEmail.text });
+  }
+
+  redirect(`/auctions/${auctionId}/review?confirmed=1`);
+}
+
+/** Buyer blocks a seller for THIS CAS (permanent mute; historical bids retained). */
+export async function blockSellerAction(auctionId: string, sellerCompanyId: string): Promise<AuctionFormState> {
+  const { user, company } = await requireUser();
+  const [auction] = await db
+    .select()
+    .from(auctions)
+    .where(and(eq(auctions.id, auctionId), eq(auctions.buyerCompanyId, company.id)))
+    .limit(1);
+  if (!auction) return { error: 'Auction not found.' };
+
+  await db.insert(blocks).values({
+    blockerCompanyId: company.id,
+    blockedCompanyId: sellerCompanyId,
+    casNumber: auction.casNumber,
+    scope: 'this_cas',
+  });
+  await recordAudit({
+    actorUserId: user.id,
+    entityType: 'company',
+    entityId: sellerCompanyId,
+    action: AuditAction.Blocked,
+    snapshot: { casNumber: auction.casNumber, scope: 'this_cas', context: 'buyer_blocks_seller' },
+  });
+  revalidatePath(`/auctions/${auctionId}/review`);
+  return { success: 'Seller blocked for this CAS.' };
 }
