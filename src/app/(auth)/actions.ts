@@ -16,6 +16,44 @@ import { resetPasswordEmail } from '@/lib/email/templates';
 
 export type AuthFormState = { error?: string; success?: string } | null;
 
+export interface GstPreview {
+  ok: boolean;
+  legalName?: string;
+  address?: string;
+  status?: 'verified' | 'pending';
+  error?: string;
+}
+
+/** Step 1 of signup: verify a GSTIN and return the fetched (locked) identity. */
+export async function verifyGstinAction(gstinRaw: string): Promise<GstPreview> {
+  const gstin = normalizeGstin(gstinRaw);
+  if (!isValidGstinFormat(gstin)) {
+    return { ok: false, error: 'That GSTIN doesn’t look valid. Check the 15-character format.' };
+  }
+  const [existing] = await db.select().from(companies).where(eq(companies.gstin, gstin)).limit(1);
+  if (existing) {
+    return { ok: false, error: 'This GSTIN is already registered — contact your Admin or recover access.' };
+  }
+  try {
+    const v = await getGstProvider().verify(gstin);
+    if (!v.ok && v.status === 'rejected') {
+      return { ok: false, error: v.message ?? 'GSTIN could not be verified.' };
+    }
+    return {
+      ok: true,
+      legalName: v.legalName,
+      address: v.address,
+      status: v.ok ? 'verified' : 'pending',
+    };
+  } catch {
+    return {
+      ok: true,
+      status: 'pending',
+      error: 'The GST service is slow right now — you can still register provisionally.',
+    };
+  }
+}
+
 const signupSchema = z.object({
   gstin: z.string().min(1),
   firstName: z.string().min(1),

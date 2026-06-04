@@ -1,9 +1,12 @@
 'use client';
 
 import { useFormState } from 'react-dom';
+import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { signUpAction } from '../actions';
+import { BadgeCheck, Clock, Loader2, Search } from 'lucide-react';
+import { signUpAction, verifyGstinAction, type GstPreview } from '../actions';
 import { SubmitButton } from '@/components/submit-button';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -12,98 +15,144 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 
 export function SignupForm() {
   const [state, action] = useFormState(signUpAction, null);
+  const [gstin, setGstin] = useState('');
+  const [preview, setPreview] = useState<GstPreview | null>(null);
+  const [verifying, startVerify] = useTransition();
+
+  function verify() {
+    const value = gstin.trim().toUpperCase();
+    if (!value) return;
+    startVerify(async () => setPreview(await verifyGstinAction(value)));
+  }
+
+  const confirmed = preview?.ok === true;
 
   return (
     <Card>
       <CardHeader>
         <CardTitle className="text-xl">Create your company account</CardTitle>
         <CardDescription>
-          Your company identity is anchored to a verified GSTIN. The first person to register
-          becomes the Admin and can both buy and sell.
+          Your identity is anchored to a verified GSTIN. The first person to register becomes the
+          Admin (can both buy and sell).
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={action} className="space-y-4">
-          {state?.error ? (
+        {/* Step 1 — verify GSTIN */}
+        <div className="space-y-2">
+          <Label htmlFor="gstinInput">Company GSTIN</Label>
+          <div className="flex gap-2">
+            <Input
+              id="gstinInput"
+              value={gstin}
+              onChange={(e) => {
+                setGstin(e.target.value.toUpperCase());
+                setPreview(null);
+              }}
+              placeholder="27AAPFU0939F1ZV"
+              maxLength={15}
+              autoCapitalize="characters"
+            />
+            <Button type="button" variant="outline" onClick={verify} disabled={verifying}>
+              {verifying ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+              Verify
+            </Button>
+          </div>
+          {preview && !preview.ok ? (
             <Alert variant="destructive">
-              <AlertDescription>{state.error}</AlertDescription>
+              <AlertDescription>{preview.error}</AlertDescription>
             </Alert>
           ) : null}
+        </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="gstin">Company GSTIN</Label>
-            <Input
-              id="gstin"
-              name="gstin"
-              placeholder="27AAPFU0939F1ZV"
-              autoCapitalize="characters"
-              maxLength={15}
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              15 characters. We fetch and lock your legal name and address from the GST network.
-            </p>
-          </div>
+        {/* Step 2 — confirm fetched identity + details */}
+        {confirmed ? (
+          <form action={action} className="mt-5 space-y-4">
+            {state?.error ? (
+              <Alert variant="destructive">
+                <AlertDescription>{state.error}</AlertDescription>
+              </Alert>
+            ) : null}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-2">
-              <Label htmlFor="firstName">First name</Label>
-              <Input id="firstName" name="firstName" required />
+            <div className="rounded-lg border bg-muted/30 p-4">
+              <div className="mb-2 flex items-center gap-2 text-sm font-medium">
+                {preview?.status === 'verified' ? (
+                  <>
+                    <BadgeCheck className="h-4 w-4 text-success" /> Verified on the GST network
+                  </>
+                ) : (
+                  <>
+                    <Clock className="h-4 w-4 text-warning" /> Provisional — verification pending
+                  </>
+                )}
+              </div>
+              <p className="text-xs uppercase tracking-wide text-muted-foreground">Legal name</p>
+              <p className="font-semibold">{preview?.legalName || '—'}</p>
+              {preview?.address ? (
+                <>
+                  <p className="mt-2 text-xs uppercase tracking-wide text-muted-foreground">Address</p>
+                  <p className="text-sm">{preview.address}</p>
+                </>
+              ) : null}
+              <p className="mt-2 text-xs text-muted-foreground">
+                This identity is locked and cannot be hand-edited.
+              </p>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="lastName">Last name</Label>
-              <Input id="lastName" name="lastName" required />
+
+            <input type="hidden" name="gstin" value={gstin} />
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="firstName">First name</Label>
+                <Input id="firstName" name="firstName" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="lastName">Last name</Label>
+                <Input id="lastName" name="lastName" required />
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="email">Corporate email</Label>
-            <Input id="email" name="email" type="email" autoComplete="email" required />
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" name="phone" type="tel" required />
+              <Label htmlFor="email">Corporate email</Label>
+              <Input id="email" name="email" type="email" autoComplete="email" required />
             </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-2">
+                <Label htmlFor="phone">Phone</Label>
+                <Input id="phone" name="phone" type="tel" required />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="designation">Designation</Label>
+                <Input id="designation" name="designation" placeholder="e.g. Procurement Lead" />
+              </div>
+            </div>
+
             <div className="space-y-2">
-              <Label htmlFor="designation">Designation</Label>
-              <Input id="designation" name="designation" placeholder="e.g. Procurement Lead" />
+              <Label htmlFor="password">Password</Label>
+              <Input id="password" name="password" type="password" autoComplete="new-password" required />
+              <p className="text-xs text-muted-foreground">
+                At least 8 characters, with 3 of: lowercase, uppercase, number, symbol.
+              </p>
             </div>
-          </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              autoComplete="new-password"
-              required
-            />
-            <p className="text-xs text-muted-foreground">
-              At least 8 characters, with 3 of: lowercase, uppercase, number, symbol.
-            </p>
-          </div>
+            <div className="flex items-start gap-2 rounded-md border bg-muted/30 p-3">
+              <Checkbox id="consent" name="consent" className="mt-0.5" required />
+              <Label htmlFor="consent" className="text-sm font-normal leading-snug">
+                I accept the{' '}
+                <Link href="/terms" className="underline" target="_blank">
+                  Terms &amp; Conditions
+                </Link>{' '}
+                (incl. the Deal Confirmation Record terms) and consent to data processing under the{' '}
+                <Link href="/privacy" className="underline" target="_blank">
+                  Privacy Policy
+                </Link>{' '}
+                (DPDP).
+              </Label>
+            </div>
 
-          <div className="flex items-start gap-2 rounded-md border bg-muted/30 p-3">
-            <Checkbox id="consent" name="consent" className="mt-0.5" required />
-            <Label htmlFor="consent" className="text-sm font-normal leading-snug">
-              I accept the{' '}
-              <Link href="/terms" className="underline" target="_blank">
-                Terms &amp; Conditions
-              </Link>{' '}
-              (including the Deal Confirmation Record terms) and consent to processing of my data
-              under the{' '}
-              <Link href="/privacy" className="underline" target="_blank">
-                Privacy Policy
-              </Link>{' '}
-              (DPDP).
-            </Label>
-          </div>
-
-          <SubmitButton className="w-full">Verify GSTIN &amp; create account</SubmitButton>
-        </form>
+            <SubmitButton className="w-full">Create account</SubmitButton>
+          </form>
+        ) : null}
 
         <p className="mt-4 text-center text-sm text-muted-foreground">
           Already registered?{' '}

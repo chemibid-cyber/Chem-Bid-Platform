@@ -106,7 +106,7 @@ Execute the 9 prompts in `docs/Chemical-Auction-Build-Prompts.md` **in order**. 
 ## 8. Build progress (update as you go)
 
 - [x] Prompt 1 — scaffold + schema + auth
-- [ ] Prompt 2 — onboarding + members + catalog/CAS
+- [x] Prompt 2 — onboarding + members + catalog/CAS
 - [ ] Prompt 3 — auction creation + targeting + network
 - [ ] Prompt 4 — Stage-1 blind bidding
 - [ ] Prompt 5 — Stage-2 counter loop
@@ -173,6 +173,15 @@ Applied `/plan-eng-review` discipline to the decision-complete PRD. No scope cha
 - **Verified:** `npm run typecheck`, `npm run build` (16 routes), `npm run test` all green. Runtime signup→login→logout needs live Supabase keys (documented in README); the flow is fully wired.
 - **Persona pass:** applied Reviewer/Designer discipline inline (strict TS no-any, consistent design tokens, no AI-slop, accessible native controls). `/cso` + `/review` reserved for the explicit gates (after P4, P7) per §9 autonomous-run note.
 
+### 2026-06-04 — Prompt 2 shipped (onboarding + members + catalog/CAS)
+
+- **CAS resolver** (`lib/cas/`): cache-first (`cas_cache`), then PubChem `name/<cas>/cids` + `cid/<cids>/property/Title`, dedup CIDs, classify 0/1/many. Never throws — a flaky/slow PubChem (7s timeout) degrades to `not_found` (manual entry). Pure `parse.ts` (dedup, classify, CAS check-digit) unit-tested.
+- **Onboarding** is now two-step: Verify GSTIN → render the **read-only** fetched legal name + address → confirm + set password + T&C. `signUpAction` re-verifies server-side (don't trust the client preview).
+- **Members:** invite via `supabase.auth.admin.generateLink({type:'invite'})` + **Resend** email; member sets password at `/accept-invite` (top-level route) which flips status invited→active and stamps T&C/DPDP consent. Capability toggles (admin). **Disable = mandatory reassign**: `/members/[id]/disable` lists owned catalog items + live auctions + active bids and forces picking an eligible colleague (admin or both-caps) before disabling; last-active-admin is protected.
+- **Catalog:** add with CAS-resolve (0/1/many UI), N/A mixture free-text, roles (mfr/dist/trader), grade (+tooltips), min purity. Cross-user uniqueness `(company, cas, profile)` → on collision show the owner (name/designation/team/email) + **Request transfer** (notifies owner + admins, audited). Edit + delist (delist **blocked** if the CAS backs a live auction/active bid).
+- **Drizzle enum typing gotcha (logged):** deriving `z.enum(arr)` from `Array.map(...)` loses literal types → insert/`.set()` reject the column. Fix = use `as const` literal tuples for enum value lists. Applied in catalog actions.
+- **Verified:** typecheck + build (20 routes) + 29 tests green. Runtime CAS→Toluene + invite email need live Supabase/network (logic + CHECK satisfied in code).
+
 ## 10. Blocked / needs human (append-only)
 
 _(empty — record real blockers here; do NOT resolve by violating §2)_
@@ -189,7 +198,7 @@ _(empty — record real blockers here; do NOT resolve by violating §2)_
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **Chemical Auction App** (396 symbols, 715 relationships, 19 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **Chemical Auction App** (519 symbols, 1090 relationships, 37 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -285,10 +294,13 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 | Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
-| Work in the Gst area (15 symbols) | `.claude/skills/generated/gst/SKILL.md` |
-| Work in the Auth area (15 symbols) | `.claude/skills/generated/auth/SKILL.md` |
-| Work in the Email area (12 symbols) | `.claude/skills/generated/email/SKILL.md` |
+| Work in the Auth area (20 symbols) | `.claude/skills/generated/auth/SKILL.md` |
+| Work in the Gst area (17 symbols) | `.claude/skills/generated/gst/SKILL.md` |
+| Work in the Email area (13 symbols) | `.claude/skills/generated/email/SKILL.md` |
 | Work in the App area (11 symbols) | `.claude/skills/generated/app/SKILL.md` |
+| Work in the Cas area (10 symbols) | `.claude/skills/generated/cas/SKILL.md` |
+| Work in the Catalog area (9 symbols) | `.claude/skills/generated/catalog/SKILL.md` |
+| Work in the Members area (8 symbols) | `.claude/skills/generated/members/SKILL.md` |
 | Work in the Cluster_2 area (4 symbols) | `.claude/skills/generated/cluster-2/SKILL.md` |
 | Work in the Cluster_3 area (4 symbols) | `.claude/skills/generated/cluster-3/SKILL.md` |
 | Work in the (auth) area (4 symbols) | `.claude/skills/generated/auth-2/SKILL.md` |
