@@ -107,7 +107,7 @@ Execute the 9 prompts in `docs/Chemical-Auction-Build-Prompts.md` **in order**. 
 
 - [x] Prompt 1 — scaffold + schema + auth
 - [x] Prompt 2 — onboarding + members + catalog/CAS
-- [ ] Prompt 3 — auction creation + targeting + network
+- [x] Prompt 3 — auction creation + targeting + network
 - [ ] Prompt 4 — Stage-1 blind bidding
 - [ ] Prompt 5 — Stage-2 counter loop
 - [ ] Prompt 6 — closure + leaderboard + dispute + export
@@ -182,6 +182,16 @@ Applied `/plan-eng-review` discipline to the decision-complete PRD. No scope cha
 - **Drizzle enum typing gotcha (logged):** deriving `z.enum(arr)` from `Array.map(...)` loses literal types → insert/`.set()` reject the column. Fix = use `as const` literal tuples for enum value lists. Applied in catalog actions.
 - **Verified:** typecheck + build (20 routes) + 29 tests green. Runtime CAS→Toluene + invite email need live Supabase/network (logic + CHECK satisfied in code).
 
+### 2026-06-04 — Prompt 3 shipped (auctions + targeting + network)
+
+- **Auction create** (`/auctions/new`): CAS-resolve reused from catalog, mixture toggle, qty+unit, min purity, packing, delivery address (defaults to registered), logistics basis, supplier filter, spec upload (Supabase Storage `auction-files`, PDF/JPG/PNG ≤10MB, private bucket + signed URLs), remarks, IST closing (6h–14d), privacy + blind. **Gated on `verificationStatus==='verified'`.** Empty-network safeguard blocks Registered-Only with 0 active partners.
+- **Timer logic** (`lib/auction/timing.ts`) pure + tested: 6h–14d bounds, one ≤48h extension, Stage-2 24h + final-2h urgency window. IST datetime-local parsed via `istLocalToDate` (`+05:30`).
+- **Targeting engine** (`lib/targeting/run.ts`): CAS exact match (SQL) or mixture whole-token match (pure `isQualifiedSeller`), role-intersection with supplier filter, **excludes sellers who blocked the buyer** (all/this-CAS), Registered-Only restricts to active partners. Dedups per company → in-app notification + Resend email to the catalog owner.
+- **Network** (`/network`): register partner by GSTIN+CAS → active if on platform (notifies their admins for **DPDP consent / decline**) else pending placeholder + optional invite email (growth loop). Incoming "added-you" list with Decline. Remove partner.
+- **Auctions list/detail**: status-grouped folders, blind badge, bid count, extend/cancel (lifecycle), buyer spec download via signed URL. Full Stage-1 bid review deferred to P5 (`/auctions/[id]/review`).
+- **Storage access model:** private bucket; server mints 5-min signed URLs only after an authz check (buyer here; accepted sellers in P4). No public reads, no anon storage policies.
+- **Verified:** typecheck + build (28 routes) + 34 tests green.
+
 ## 10. Blocked / needs human (append-only)
 
 _(empty — record real blockers here; do NOT resolve by violating §2)_
@@ -198,7 +208,7 @@ _(empty — record real blockers here; do NOT resolve by violating §2)_
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **Chemical Auction App** (519 symbols, 1090 relationships, 37 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **Chemical Auction App** (587 symbols, 1355 relationships, 42 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -294,16 +304,19 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 | Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
-| Work in the Auth area (20 symbols) | `.claude/skills/generated/auth/SKILL.md` |
-| Work in the Gst area (17 symbols) | `.claude/skills/generated/gst/SKILL.md` |
-| Work in the Email area (13 symbols) | `.claude/skills/generated/email/SKILL.md` |
-| Work in the App area (11 symbols) | `.claude/skills/generated/app/SKILL.md` |
-| Work in the Cas area (10 symbols) | `.claude/skills/generated/cas/SKILL.md` |
-| Work in the Catalog area (9 symbols) | `.claude/skills/generated/catalog/SKILL.md` |
+| Work in the Gst area (18 symbols) | `.claude/skills/generated/gst/SKILL.md` |
+| Work in the Email area (15 symbols) | `.claude/skills/generated/email/SKILL.md` |
+| Work in the Auth area (15 symbols) | `.claude/skills/generated/auth/SKILL.md` |
+| Work in the Auction area (14 symbols) | `.claude/skills/generated/auction/SKILL.md` |
+| Work in the Network area (11 symbols) | `.claude/skills/generated/network/SKILL.md` |
+| Work in the Catalog area (11 symbols) | `.claude/skills/generated/catalog/SKILL.md` |
+| Work in the Cas area (11 symbols) | `.claude/skills/generated/cas/SKILL.md` |
+| Work in the App area (10 symbols) | `.claude/skills/generated/app/SKILL.md` |
 | Work in the Members area (8 symbols) | `.claude/skills/generated/members/SKILL.md` |
 | Work in the Cluster_2 area (4 symbols) | `.claude/skills/generated/cluster-2/SKILL.md` |
-| Work in the Cluster_3 area (4 symbols) | `.claude/skills/generated/cluster-3/SKILL.md` |
+| Work in the Cluster_5 area (4 symbols) | `.claude/skills/generated/cluster-5/SKILL.md` |
 | Work in the (auth) area (4 symbols) | `.claude/skills/generated/auth-2/SKILL.md` |
-| Work in the Cluster_7 area (3 symbols) | `.claude/skills/generated/cluster-7/SKILL.md` |
+| Work in the Auctions area (4 symbols) | `.claude/skills/generated/auctions/SKILL.md` |
+| Work in the Cluster_9 area (3 symbols) | `.claude/skills/generated/cluster-9/SKILL.md` |
 
 <!-- gitnexus:end -->

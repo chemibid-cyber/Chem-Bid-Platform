@@ -52,6 +52,13 @@ export function timeRemaining(closesAt: Date | string | number, now: Date = new 
   return `${m}m`;
 }
 
+/** Interpret a datetime-local string ("YYYY-MM-DDTHH:mm") as IST → UTC Date. */
+export function istLocalToDate(local: string): Date {
+  if (!local) return new Date(NaN);
+  const withSeconds = local.length === 16 ? `${local}:00` : local;
+  return new Date(`${withSeconds}+05:30`);
+}
+
 export const UNIT_LABEL: Record<string, string> = { kg: 'kg', mt: 'MT', l: 'L' };
 
 export const PAYMENT_TERMS_LABEL: Record<string, string> = {
