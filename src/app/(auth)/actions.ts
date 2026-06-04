@@ -10,6 +10,7 @@ import { createServiceClient } from '@/lib/supabase/service';
 import { getGstProvider, type GstVerificationResult } from '@/lib/gst';
 import { isValidGstinFormat, normalizeGstin, extractPan } from '@/lib/gstin';
 import { validatePassword } from '@/lib/auth/password';
+import { rateLimit } from '@/lib/ratelimit';
 import { recordAudit, AuditAction } from '@/lib/audit';
 import { sendEmail } from '@/lib/email';
 import { resetPasswordEmail } from '@/lib/email/templates';
@@ -183,6 +184,12 @@ export async function logInAction(
   const email = String(formData.get('email') ?? '');
   const password = String(formData.get('password') ?? '');
   if (!email || !password) return { error: 'Enter your email and password.' };
+
+  // Baseline lockout: 5 attempts / 15 min per email.
+  const limit = rateLimit(`login:${email.toLowerCase()}`, 5, 15 * 60 * 1000);
+  if (!limit.ok) {
+    return { error: `Too many attempts. Try again in ${Math.ceil((limit.retryAfterSec ?? 0) / 60)} min.` };
+  }
 
   const supabase = createClient();
   const { data: signin, error } = await supabase.auth.signInWithPassword({ email, password });

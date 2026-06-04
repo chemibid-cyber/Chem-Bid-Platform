@@ -1,7 +1,7 @@
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **Chemical Auction App** (699 symbols, 1757 relationships, 50 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **Chemical Auction App** (737 symbols, 1875 relationships, 53 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -97,21 +97,20 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 | Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
-| Work in the Requests area (29 symbols) | `.claude/skills/generated/requests/SKILL.md` |
+| Work in the Requests area (27 symbols) | `.claude/skills/generated/requests/SKILL.md` |
+| Work in the Auctions area (26 symbols) | `.claude/skills/generated/auctions/SKILL.md` |
 | Work in the Email area (19 symbols) | `.claude/skills/generated/email/SKILL.md` |
-| Work in the [id] area (19 symbols) | `.claude/skills/generated/id/SKILL.md` |
+| Work in the Network area (18 symbols) | `.claude/skills/generated/network/SKILL.md` |
+| Work in the Auth area (18 symbols) | `.claude/skills/generated/auth/SKILL.md` |
 | Work in the Gst area (18 symbols) | `.claude/skills/generated/gst/SKILL.md` |
-| Work in the Network area (14 symbols) | `.claude/skills/generated/network/SKILL.md` |
-| Work in the Catalog area (13 symbols) | `.claude/skills/generated/catalog/SKILL.md` |
-| Work in the Auctions area (11 symbols) | `.claude/skills/generated/auctions/SKILL.md` |
+| Work in the [id] area (17 symbols) | `.claude/skills/generated/id/SKILL.md` |
+| Work in the App area (12 symbols) | `.claude/skills/generated/app/SKILL.md` |
 | Work in the Cas area (11 symbols) | `.claude/skills/generated/cas/SKILL.md` |
-| Work in the App area (10 symbols) | `.claude/skills/generated/app/SKILL.md` |
 | Work in the Auction area (8 symbols) | `.claude/skills/generated/auction/SKILL.md` |
 | Work in the Members area (8 symbols) | `.claude/skills/generated/members/SKILL.md` |
-| Work in the (auth) area (7 symbols) | `.claude/skills/generated/auth/SKILL.md` |
+| Work in the (auth) area (7 symbols) | `.claude/skills/generated/auth-2/SKILL.md` |
 | Work in the Export area (6 symbols) | `.claude/skills/generated/export/SKILL.md` |
-| Work in the Auth area (6 symbols) | `.claude/skills/generated/auth-2/SKILL.md` |
-| Work in the Cluster_2 area (4 symbols) | `.claude/skills/generated/cluster-2/SKILL.md` |
-| Work in the Cluster_5 area (4 symbols) | `.claude/skills/generated/cluster-5/SKILL.md` |
+| Work in the Scripts area (4 symbols) | `.claude/skills/generated/scripts/SKILL.md` |
+| Work in the Cluster_3 area (4 symbols) | `.claude/skills/generated/cluster-3/SKILL.md` |
 
 <!-- gitnexus:end -->

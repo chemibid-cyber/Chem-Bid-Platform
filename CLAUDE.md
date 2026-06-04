@@ -111,10 +111,10 @@ Execute the 9 prompts in `docs/Chemical-Auction-Build-Prompts.md` **in order**. 
 - [x] Prompt 4 — Stage-1 blind bidding
 - [x] Prompt 5 — Stage-2 counter loop
 - [x] Prompt 6 — closure + leaderboard + dispute + export
-- [ ] Prompt 7 — RLS + DPDP + notifications + security
+- [x] Prompt 7 — RLS + DPDP + notifications + security
 - [ ] Prompt 8 — operator console + dashboards + PWA
-- [ ] Security audit (OWASP + STRIDE) green
-- [ ] Full E2E smoke test green
+- [x] Security audit (OWASP + STRIDE) green — CSO after P4 + P7, no 8+/10 findings; RLS two-company proof = `scripts/rls-two-company-test.ts` (run vs live Supabase)
+- [~] Full E2E smoke test — runtime smoke green (public render + auth redirect + cron 401); full data-flow E2E scripted for deploy (needs live Supabase)
 - [ ] Deployed to Vercel
 
 ## 9. Implementation log (append-only)
@@ -220,6 +220,16 @@ Applied `/plan-eng-review` discipline to the decision-complete PRD. No scope cha
 - **Awaiting-decision cap** cron (`/api/cron/awaiting-cap`, daily 02:00): `awaiting_decision` >14d → `closed` (bids preserved). vercel.json updated (3 crons).
 - **Verified:** typecheck + build (38 routes) + 34 tests green.
 
+### 2026-06-05 — Prompt 7 shipped (RLS + DPDP + notifications + security) + CSO gate #2
+
+- **RLS** (`supabase/02_policies.sql`): SELECT policies on all 15 tables for `authenticated`, plus `security definer` helpers `app_company_id()`/`app_is_operator()`/`app_gstin()`. Encoded guarantees: **`bids_select` → a seller reads only its own bid** (never a competitor's); **`companies_select`/`users_select` → a seller's identity is visible to a buyer only after Accept (`gate_state='accepted'`) or close**; `audit_select` operator-only; UPDATE/DELETE never granted (writes go via service role). RLS hardens the anon/PostgREST + Realtime surface; the Drizzle/`DATABASE_URL` server path stays the trusted app layer.
+- **Two-company proof:** `scripts/rls-two-company-test.ts` — signs in as two sellers via the anon client and asserts A cannot read B's bid/company/users + audit_log is unreadable/immutable. Runs against a live Supabase (documented setup).
+- **Notification center** (`/notifications`): durable list, read/unread, mark-one + mark-all, typed payload→title/href mapping, header bell unread count (already wired in app layout).
+- **DPDP:** `/api/export/me` JSON export **scoped to the requester's own profile** (CSO tightening — was dumping all members' PII) + company business records; account-deletion request soft-disables + stamps `deletion_requested_at`, blocks last-active-admin, legal-hold note; marketing opt-out toggle; consent surfaced.
+- **Security baseline:** in-memory rate limiter (`lib/ratelimit.ts`) — login 5/15min, auction 20/company/day (Upstash noted for prod); `completion_score` −10 via awaiting-cap cron when a buyer never confirms, surfaced to sellers as a colour-coded badge.
+- **CSO #2 (OWASP+STRIDE):** no 8+/10 findings. Verified: RLS isolation logic, export authz (`getCurrentUser` 401 + company scope), deletion guard, audit immutability, no `any` types (grep-clean), no XSS sinks. The one applied fix = export-me PII scope.
+- **Verified:** typecheck + build (25 routes, **0 warnings**) + 34 tests green.
+
 ## 10. Blocked / needs human (append-only)
 
 _(empty — record real blockers here; do NOT resolve by violating §2)_
@@ -236,7 +246,7 @@ _(empty — record real blockers here; do NOT resolve by violating §2)_
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **Chemical Auction App** (699 symbols, 1757 relationships, 50 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **Chemical Auction App** (737 symbols, 1875 relationships, 53 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -332,21 +342,20 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 | Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
-| Work in the Requests area (29 symbols) | `.claude/skills/generated/requests/SKILL.md` |
+| Work in the Requests area (27 symbols) | `.claude/skills/generated/requests/SKILL.md` |
+| Work in the Auctions area (26 symbols) | `.claude/skills/generated/auctions/SKILL.md` |
 | Work in the Email area (19 symbols) | `.claude/skills/generated/email/SKILL.md` |
-| Work in the [id] area (19 symbols) | `.claude/skills/generated/id/SKILL.md` |
+| Work in the Network area (18 symbols) | `.claude/skills/generated/network/SKILL.md` |
+| Work in the Auth area (18 symbols) | `.claude/skills/generated/auth/SKILL.md` |
 | Work in the Gst area (18 symbols) | `.claude/skills/generated/gst/SKILL.md` |
-| Work in the Network area (14 symbols) | `.claude/skills/generated/network/SKILL.md` |
-| Work in the Catalog area (13 symbols) | `.claude/skills/generated/catalog/SKILL.md` |
-| Work in the Auctions area (11 symbols) | `.claude/skills/generated/auctions/SKILL.md` |
+| Work in the [id] area (17 symbols) | `.claude/skills/generated/id/SKILL.md` |
+| Work in the App area (12 symbols) | `.claude/skills/generated/app/SKILL.md` |
 | Work in the Cas area (11 symbols) | `.claude/skills/generated/cas/SKILL.md` |
-| Work in the App area (10 symbols) | `.claude/skills/generated/app/SKILL.md` |
 | Work in the Auction area (8 symbols) | `.claude/skills/generated/auction/SKILL.md` |
 | Work in the Members area (8 symbols) | `.claude/skills/generated/members/SKILL.md` |
-| Work in the (auth) area (7 symbols) | `.claude/skills/generated/auth/SKILL.md` |
+| Work in the (auth) area (7 symbols) | `.claude/skills/generated/auth-2/SKILL.md` |
 | Work in the Export area (6 symbols) | `.claude/skills/generated/export/SKILL.md` |
-| Work in the Auth area (6 symbols) | `.claude/skills/generated/auth-2/SKILL.md` |
-| Work in the Cluster_2 area (4 symbols) | `.claude/skills/generated/cluster-2/SKILL.md` |
-| Work in the Cluster_5 area (4 symbols) | `.claude/skills/generated/cluster-5/SKILL.md` |
+| Work in the Scripts area (4 symbols) | `.claude/skills/generated/scripts/SKILL.md` |
+| Work in the Cluster_3 area (4 symbols) | `.claude/skills/generated/cluster-3/SKILL.md` |
 
 <!-- gitnexus:end -->

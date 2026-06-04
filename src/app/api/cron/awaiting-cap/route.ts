@@ -1,6 +1,6 @@
-import { and, eq, lte, isNotNull } from 'drizzle-orm';
+import { and, eq, lte, isNotNull, sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { auctions } from '@/lib/db/schema';
+import { auctions, companies } from '@/lib/db/schema';
 import { isAuthorizedCron } from '@/lib/cron/auth';
 import { recordAudit, AuditAction } from '@/lib/audit';
 
@@ -20,7 +20,7 @@ export async function GET(req: Request) {
 
   const cutoff = new Date(Date.now() - FOURTEEN_DAYS_MS);
   const stale = await db
-    .select({ id: auctions.id })
+    .select({ id: auctions.id, buyerCompanyId: auctions.buyerCompanyId })
     .from(auctions)
     .where(
       and(
@@ -32,12 +32,24 @@ export async function GET(req: Request) {
 
   for (const a of stale) {
     await db.update(auctions).set({ status: 'closed', stage: 'closed' }).where(eq(auctions.id, a.id));
+    // Anti price-fishing: received bids but never confirmed → lower completion score.
+    await db
+      .update(companies)
+      .set({ completionScore: sql`greatest(0, ${companies.completionScore} - 10)` })
+      .where(eq(companies.id, a.buyerCompanyId));
     await recordAudit({
       actorUserId: null,
       entityType: 'auction',
       entityId: a.id,
       action: AuditAction.AuctionClosed,
-      snapshot: { reason: 'awaiting_decision_cap_14d' },
+      snapshot: { reason: 'awaiting_decision_cap_14d', completionScorePenalty: 10 },
+    });
+    await recordAudit({
+      actorUserId: null,
+      entityType: 'company',
+      entityId: a.buyerCompanyId,
+      action: AuditAction.CompletionScoreChanged,
+      snapshot: { delta: -10, reason: 'never_confirmed' },
     });
   }
 

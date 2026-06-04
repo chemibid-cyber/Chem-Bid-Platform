@@ -1,7 +1,7 @@
 import { and, eq, isNotNull, asc } from 'drizzle-orm';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { db } from '@/lib/db';
-import { auctions, bids, companies, users } from '@/lib/db/schema';
+import { auctions, bids, companies } from '@/lib/db/schema';
 import { effectiveTotal } from '@/lib/ranking';
 import { UNIT_LABEL, PAYMENT_TERMS_LABEL } from '@/lib/format';
 

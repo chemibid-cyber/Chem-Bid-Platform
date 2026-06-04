@@ -60,12 +60,14 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
   // Buyer identity is revealed only AFTER this seller accepts (or post-close).
   let buyerName = 'A verified buyer';
   let buyerActor = '';
+  let buyerScore: number | null = null;
   if (accepted || !open) {
     const [buyerCompany] = await db
-      .select({ legalName: companies.legalName })
+      .select({ legalName: companies.legalName, completionScore: companies.completionScore })
       .from(companies)
       .where(eq(companies.id, auction.buyerCompanyId))
       .limit(1);
+    buyerScore = buyerCompany?.completionScore ?? null;
     const [buyerUser] = await db
       .select({ firstName: users.firstName, lastName: users.lastName, designation: users.designation })
       .from(users)
@@ -108,7 +110,7 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
       <Card>
         <CardContent className="flex items-center gap-3 py-4">
           <Building2 className="h-5 w-5 text-muted-foreground" />
-          <div>
+          <div className="flex-1">
             <p className="font-medium">{buyerName}</p>
             {buyerActor ? (
               <p className="text-sm text-muted-foreground">{buyerActor}</p>
@@ -118,6 +120,11 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
               </p>
             )}
           </div>
+          {buyerScore != null ? (
+            <Badge variant={buyerScore >= 70 ? 'success' : buyerScore >= 40 ? 'warning' : 'destructive'}>
+              Completion score {buyerScore}
+            </Badge>
+          ) : null}
         </CardContent>
       </Card>
 

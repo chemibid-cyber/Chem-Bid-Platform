@@ -22,6 +22,7 @@ import { istLocalToDate, PAYMENT_TERMS_LABEL } from '@/lib/format';
 import { uploadFile, signedUrl } from '@/lib/storage';
 import { runTargeting } from '@/lib/targeting/run';
 import { effectiveTotal } from '@/lib/ranking';
+import { rateLimit, dayKey } from '@/lib/ratelimit';
 import { recordAudit, AuditAction } from '@/lib/audit';
 import { sendEmail } from '@/lib/email';
 import { counterReceivedEmail, dealConfirmationEmail } from '@/lib/email/templates';
@@ -56,6 +57,12 @@ export async function createAuctionAction(
   if (!user.canBuy && !user.isAdmin) return { error: 'You need buy capability to post a requirement.' };
   if (company.verificationStatus !== 'verified') {
     return { error: 'Your GSTIN must be verified before you can publish an auction.' };
+  }
+
+  // Anti-spam: max 20 auctions per company per day (FR-1.7 / §6 trust).
+  const cap = rateLimit(`auction:${company.id}:${dayKey()}`, 20, 24 * 60 * 60 * 1000);
+  if (!cap.ok) {
+    return { error: 'Daily auction limit reached (20/day). Try again tomorrow.' };
   }
 
   const parsed = schema.safeParse(Object.fromEntries(formData));
