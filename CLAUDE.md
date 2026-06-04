@@ -108,7 +108,7 @@ Execute the 9 prompts in `docs/Chemical-Auction-Build-Prompts.md` **in order**. 
 - [x] Prompt 1 — scaffold + schema + auth
 - [x] Prompt 2 — onboarding + members + catalog/CAS
 - [x] Prompt 3 — auction creation + targeting + network
-- [ ] Prompt 4 — Stage-1 blind bidding
+- [x] Prompt 4 — Stage-1 blind bidding
 - [ ] Prompt 5 — Stage-2 counter loop
 - [ ] Prompt 6 — closure + leaderboard + dispute + export
 - [ ] Prompt 7 — RLS + DPDP + notifications + security
@@ -192,6 +192,16 @@ Applied `/plan-eng-review` discipline to the decision-complete PRD. No scope cha
 - **Storage access model:** private bucket; server mints 5-min signed URLs only after an authz check (buyer here; accepted sellers in P4). No public reads, no anon storage policies.
 - **Verified:** typecheck + build (28 routes) + 34 tests green.
 
+### 2026-06-04 — Prompt 4 shipped (Stage-1 blind bidding) + CSO gate
+
+- **Targeting now seeds per-seller "request" rows** (placeholder `bids`, `gateState='notified'`, no pricing) so each seller has a durable inbox carrying gate state. A real quote = `stage1Total IS NOT NULL`; bid-count queries filter on that so placeholders don't inflate counts.
+- **Seller gate** (`/requests/[id]`): pricing locked + buyer masked ("A verified buyer") until **Accept & Quote**; then buyer legal name + acting user + designation revealed and spec downloadable (signed URL, accepted-only). Ignore → collapsible list + Un-ignore (while open). Block this CAS / all → `blocks` row + gate `blocked`.
+- **Bid form** (full qty only — no partial field): basic + freight → live total; **Ex-Works hides freight + forces 0**; Delivered requires it. Payment terms + lead time on the form. COA upload required unless "COA on dispatch (make-to-order)". Submit / revise / **withdraw** (status→withdrawn, **retained** in audit).
+- **Blind rank** = server-computed (`getMyRankAction`): competitor totals fetched server-side, only the seller's own `#rank` + count returned. Tie-break by earlier `created_at`. Client `RankWidget` polls (12s) + best-effort Supabase Realtime trigger (activates once Prompt-7 RLS allows seller change-events). **No competitor price/identity ever reaches the client.**
+- **Cron close** (`/api/cron/close-auctions`, Bearer `CRON_SECRET`, idempotent): past-deadline active auctions → `awaiting_decision` (notify buyer, expire un-quoted placeholders) or `unsuccessful` (notify + Clone). `vercel.json` cron every 5 min.
+- **CSO pass (daily, OWASP+STRIDE) on the bidding surface:** No 8+/10 exploitable findings. Verified app-layer blind-privacy holds (rank server-only, identity masked, file authz, no XSS sink, only raw `sql` is a column-ref count subquery, cron guarded). Residual = **missing-hardening scheduled for Prompt 7**: Postgres RLS policies + the two-company anon proof, rate limiting, virus scan, explicit 12h session. RLS currently enabled default-deny.
+- **Verified:** typecheck + build (32 routes) + 34 tests green.
+
 ## 10. Blocked / needs human (append-only)
 
 _(empty — record real blockers here; do NOT resolve by violating §2)_
@@ -208,7 +218,7 @@ _(empty — record real blockers here; do NOT resolve by violating §2)_
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **Chemical Auction App** (587 symbols, 1355 relationships, 42 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **Chemical Auction App** (639 symbols, 1526 relationships, 46 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -304,19 +314,20 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 | Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
+| Work in the Requests area (28 symbols) | `.claude/skills/generated/requests/SKILL.md` |
 | Work in the Gst area (18 symbols) | `.claude/skills/generated/gst/SKILL.md` |
-| Work in the Email area (15 symbols) | `.claude/skills/generated/email/SKILL.md` |
-| Work in the Auth area (15 symbols) | `.claude/skills/generated/auth/SKILL.md` |
-| Work in the Auction area (14 symbols) | `.claude/skills/generated/auction/SKILL.md` |
-| Work in the Network area (11 symbols) | `.claude/skills/generated/network/SKILL.md` |
-| Work in the Catalog area (11 symbols) | `.claude/skills/generated/catalog/SKILL.md` |
+| Work in the Email area (14 symbols) | `.claude/skills/generated/email/SKILL.md` |
+| Work in the Catalog area (13 symbols) | `.claude/skills/generated/catalog/SKILL.md` |
+| Work in the Auth area (13 symbols) | `.claude/skills/generated/auth/SKILL.md` |
 | Work in the Cas area (11 symbols) | `.claude/skills/generated/cas/SKILL.md` |
+| Work in the [id] area (11 symbols) | `.claude/skills/generated/id/SKILL.md` |
+| Work in the Network area (10 symbols) | `.claude/skills/generated/network/SKILL.md` |
 | Work in the App area (10 symbols) | `.claude/skills/generated/app/SKILL.md` |
+| Work in the Auction area (8 symbols) | `.claude/skills/generated/auction/SKILL.md` |
 | Work in the Members area (8 symbols) | `.claude/skills/generated/members/SKILL.md` |
 | Work in the Cluster_2 area (4 symbols) | `.claude/skills/generated/cluster-2/SKILL.md` |
 | Work in the Cluster_5 area (4 symbols) | `.claude/skills/generated/cluster-5/SKILL.md` |
 | Work in the (auth) area (4 symbols) | `.claude/skills/generated/auth-2/SKILL.md` |
 | Work in the Auctions area (4 symbols) | `.claude/skills/generated/auctions/SKILL.md` |
-| Work in the Cluster_9 area (3 symbols) | `.claude/skills/generated/cluster-9/SKILL.md` |
 
 <!-- gitnexus:end -->

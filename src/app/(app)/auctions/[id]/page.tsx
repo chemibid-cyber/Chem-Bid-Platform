@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { and, eq, count } from 'drizzle-orm';
+import { and, eq, count, isNotNull } from 'drizzle-orm';
 import { requireUser } from '@/lib/auth/session';
 import { db } from '@/lib/db';
 import { auctions, bids } from '@/lib/db/schema';
@@ -43,7 +43,7 @@ export default async function AuctionDetailPage({
   const [bidStat] = await db
     .select({ value: count() })
     .from(bids)
-    .where(and(eq(bids.auctionId, auction.id)));
+    .where(and(eq(bids.auctionId, auction.id), isNotNull(bids.stage1Total)));
   const bidCount = Number(bidStat?.value ?? 0);
   const meta = auctionStatusMeta(auction.status);
 

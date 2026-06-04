@@ -33,7 +33,7 @@ export default async function AuctionsPage() {
       stage: auctions.stage,
       closesAt: auctions.closesAt,
       blind: auctions.blind,
-      bidCount: sql<number>`(select count(*) from ${bids} where ${bids.auctionId} = ${auctions.id} and ${bids.status} <> 'withdrawn')`,
+      bidCount: sql<number>`(select count(*) from ${bids} where ${bids.auctionId} = ${auctions.id} and ${bids.status} <> 'withdrawn' and ${bids.stage1Total} is not null)`,
     })
     .from(auctions)
     .where(eq(auctions.buyerCompanyId, company.id))

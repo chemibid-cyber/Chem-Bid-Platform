@@ -7,6 +7,7 @@ import {
   blocks,
   registeredPartners,
   notifications,
+  bids,
   type Auction,
 } from '@/lib/db/schema';
 import { isQualifiedSeller, type AuctionTarget, type SellerCandidate } from '@/lib/targeting';
@@ -128,6 +129,21 @@ export async function runTargeting(auction: Auction): Promise<{ notified: number
 
   const recipients = [...byCompany.values()];
   if (recipients.length > 0) {
+    // Durable per-seller "request" rows carrying the gate state (notified →
+    // accepted/ignored/blocked). One per seller company (unique on auction+company).
+    await db
+      .insert(bids)
+      .values(
+        recipients.map((c) => ({
+          auctionId: auction.id,
+          sellerCompanyId: c.companyId,
+          sellerUserId: c.ownerUserId,
+          gateState: 'notified' as const,
+          status: 'active' as const,
+        })),
+      )
+      .onConflictDoNothing({ target: [bids.auctionId, bids.sellerCompanyId] });
+
     await db.insert(notifications).values(
       recipients.map((c) => ({
         userId: c.ownerUserId,
