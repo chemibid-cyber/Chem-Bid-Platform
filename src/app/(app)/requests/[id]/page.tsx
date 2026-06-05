@@ -20,6 +20,7 @@ import { BidForm } from './bid-form';
 import { RankWidget } from './rank-widget';
 import { Stage2Respond } from './stage2-respond';
 import { ReportButton } from '@/components/app/report-button';
+import { Hint } from '@/components/ui/help';
 
 export const metadata = { title: 'Requirement' };
 
@@ -203,10 +204,17 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
               <Lock className="h-4 w-4" /> Pricing is locked until you accept
             </CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-wrap items-center gap-3">
-            <AcceptButton auctionId={auction.id} />
-            <IgnoreButton auctionId={auction.id} ignored={bid.gateState === 'ignored'} />
-            <BlockControls auctionId={auction.id} />
+          <CardContent className="space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <AcceptButton auctionId={auction.id} />
+              <IgnoreButton auctionId={auction.id} ignored={bid.gateState === 'ignored'} />
+              <BlockControls auctionId={auction.id} />
+            </div>
+            <Hint>
+              Accepting reveals the buyer&apos;s identity to you and opens the quote form. Until
+              then the buyer can&apos;t see who you are — and you stay anonymous to rival sellers
+              throughout.
+            </Hint>
           </CardContent>
         </Card>
       ) : open && accepted ? (

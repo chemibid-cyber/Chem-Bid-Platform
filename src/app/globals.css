@@ -2,58 +2,76 @@
 @tailwind components;
 @tailwind utilities;
 
+/*
+ * Design tokens — see DESIGN.md. Calm, premium, warm-tinted neutrals with a
+ * single teal brand accent. HSL channels so Tailwind can alpha-blend them.
+ */
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 40 24% 98%; /* warm near-white */
+    --foreground: 30 14% 15%; /* warm ink, not pure black */
+
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 30 14% 15%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 72% 45%;
-    --destructive-foreground: 210 40% 98%;
-    --success: 142 71% 35%;
-    --success-foreground: 210 40% 98%;
-    --warning: 38 92% 45%;
-    --warning-foreground: 48 96% 8%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.6rem;
+    --popover-foreground: 30 14% 15%;
+
+    --primary: 28 12% 17%; /* deep warm ink — premium, calm */
+    --primary-foreground: 40 30% 98%;
+
+    --secondary: 38 18% 94%;
+    --secondary-foreground: 28 12% 25%;
+
+    --muted: 38 18% 95%;
+    --muted-foreground: 30 7% 44%;
+
+    --accent: 38 20% 93%; /* hover/fill surface */
+    --accent-foreground: 28 12% 20%;
+
+    /* single brand accent — teal */
+    --brand: 182 52% 33%;
+    --brand-foreground: 180 40% 98%;
+
+    --success: 158 52% 35%;
+    --success-foreground: 0 0% 100%;
+    --warning: 33 88% 46%;
+    --warning-foreground: 36 60% 11%;
+    --destructive: 4 64% 48%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 36 16% 90%;
+    --input: 34 16% 87%;
+    --ring: 182 52% 33%; /* teal focus */
+
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 50%;
-    --destructive-foreground: 210 40% 98%;
-    --success: 142 71% 45%;
-    --success-foreground: 222.2 47.4% 11.2%;
-    --warning: 38 92% 50%;
-    --warning-foreground: 48 96% 8%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
+    --background: 28 9% 9%;
+    --foreground: 40 18% 92%;
+    --card: 28 9% 12%;
+    --card-foreground: 40 18% 92%;
+    --popover: 28 9% 12%;
+    --popover-foreground: 40 18% 92%;
+    --primary: 40 24% 94%;
+    --primary-foreground: 28 12% 14%;
+    --secondary: 28 7% 18%;
+    --secondary-foreground: 40 18% 90%;
+    --muted: 28 7% 17%;
+    --muted-foreground: 36 8% 62%;
+    --accent: 28 7% 19%;
+    --accent-foreground: 40 18% 92%;
+    --brand: 180 48% 48%;
+    --brand-foreground: 180 40% 8%;
+    --success: 158 48% 46%;
+    --success-foreground: 160 40% 8%;
+    --warning: 33 84% 54%;
+    --warning-foreground: 36 60% 10%;
+    --destructive: 4 62% 52%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 30 6% 22%;
+    --input: 30 6% 24%;
+    --ring: 180 48% 48%;
   }
 }
 
@@ -63,6 +81,18 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: 'rlig' 1, 'calt' 1;
+    font-feature-settings:
+      'cv11' 1,
+      'ss01' 1,
+      'calt' 1;
+    text-rendering: optimizeLegibility;
+  }
+  /* Money + quantities line up in columns. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Calmer default focus — brand ring, no harsh outline. */
+  :focus-visible {
+    outline: none;
   }
 }

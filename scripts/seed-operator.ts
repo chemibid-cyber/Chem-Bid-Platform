@@ -6,7 +6,8 @@
  * OPERATOR_EMAILS (comma-separated). Prints a temporary password per operator —
  * they should log in and reset it immediately.
  */
-import 'dotenv/config';
+import { config } from 'dotenv';
+config({ path: '.env.local' });
 import { createClient } from '@supabase/supabase-js';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';

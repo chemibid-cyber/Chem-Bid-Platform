@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Trophy } from 'lucide-react';
 import { getMyRankAction } from '../actions';
 import { createClient } from '@/lib/supabase/client';
+import { InfoTip } from '@/components/ui/help';
 
 /**
  * Blind-mode rank. The rank is computed server-side (getMyRankAction); the client
@@ -59,9 +60,10 @@ export function RankWidget({ auctionId }: { auctionId: string }) {
       <div>
         {rank ? (
           <>
-            <p className="text-2xl font-bold leading-none">#{rank}</p>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-2xl font-bold leading-none tabular">#{rank}</p>
+            <p className="flex items-center gap-1.5 text-sm text-muted-foreground">
               of {of} live bid{of === 1 ? '' : 's'} · by lowest total rate
+              <InfoTip label="Your live position by lowest total rate. Nobody can see your price or who you are — and you can't see theirs. Revise your bid to improve your rank." />
             </p>
           </>
         ) : (
