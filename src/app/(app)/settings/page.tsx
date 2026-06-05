@@ -2,6 +2,7 @@ import { requireUser } from '@/lib/auth/session';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ComingSoonBadge } from '@/components/ui/coming-soon';
 import { formatIST } from '@/lib/format';
 import { GstRefreshForm } from './refresh-form';
 
@@ -84,6 +85,22 @@ export default async function SettingsPage() {
               </dd>
             </div>
           </dl>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader className="flex-row items-start justify-between space-y-0">
+          <div>
+            <CardTitle className="text-lg">Security</CardTitle>
+            <CardDescription>Extra account protection.</CardDescription>
+          </div>
+          <ComingSoonBadge />
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-2 text-sm text-muted-foreground">
+            <li>Two-factor authentication (OTP) at login</li>
+            <li>Mobile push for urgent counter-offers and closing auctions</li>
+          </ul>
         </CardContent>
       </Card>
     </div>

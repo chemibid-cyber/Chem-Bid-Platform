@@ -5,10 +5,11 @@ import { requireUser } from '@/lib/auth/session';
 import { getActiveMode } from '@/lib/auth/mode';
 import { db } from '@/lib/db';
 import { catalogItems, users } from '@/lib/db/schema';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buttonVariants } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/help';
 import { cn } from '@/lib/utils';
 import { GRADE_LABEL } from '@/lib/format';
 import { ROLE_LABEL } from '@/lib/catalog/constants';
@@ -59,13 +60,20 @@ export default async function CatalogPage() {
 
       {items.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-            <Package className="h-10 w-10 text-muted-foreground" />
-            <p className="text-muted-foreground">No products yet in this catalog.</p>
-            <Link href="/catalog/new" className={cn(buttonVariants({ variant: 'outline' }))}>
-              Add your first product
-            </Link>
-          </CardContent>
+          <EmptyState
+            icon={Package}
+            title="No products yet"
+            description={
+              mode === 'sell'
+                ? 'Add what you supply (CAS + grade) so matching buyer requirements reach you automatically.'
+                : 'Add the chemicals you buy to track them and get matched to proactive offers.'
+            }
+            action={
+              <Link href="/catalog/new" className={cn(buttonVariants())}>
+                <Plus className="h-4 w-4" /> Add your first product
+              </Link>
+            }
+          />
         </Card>
       ) : (
         <Card>

@@ -6,6 +6,9 @@ import { db } from '@/lib/db';
 import { auctions, bids } from '@/lib/db/schema';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { buttonVariants } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/help';
+import { cn } from '@/lib/utils';
 import { formatIST, timeRemaining, UNIT_LABEL } from '@/lib/format';
 
 export const metadata = { title: 'Requests' };
@@ -71,12 +74,16 @@ export default async function RequestsPage() {
 
       {rows.length === 0 ? (
         <Card>
-          <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
-            <Inbox className="h-10 w-10 text-muted-foreground" />
-            <p className="text-muted-foreground">
-              No requests yet. Add products to your sales catalog so buyers can find you.
-            </p>
-          </CardContent>
+          <EmptyState
+            icon={Inbox}
+            title="No requests yet"
+            description="Buyers reach you automatically when their requirement matches your sales catalog. Add the chemicals you supply (with CAS + grade) to start receiving requests."
+            action={
+              <Link href="/catalog/new" className={cn(buttonVariants({ variant: 'outline' }))}>
+                Add to sales catalog
+              </Link>
+            }
+          />
         </Card>
       ) : null}
 

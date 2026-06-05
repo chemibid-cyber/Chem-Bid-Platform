@@ -1,12 +1,13 @@
 import Link from 'next/link';
 import { eq, desc, sql } from 'drizzle-orm';
-import { Plus } from 'lucide-react';
+import { Plus, FileText } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
 import { db } from '@/lib/db';
 import { auctions, bids } from '@/lib/db/schema';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
+import { EmptyState } from '@/components/ui/help';
 import { cn } from '@/lib/utils';
 import { formatIST, timeRemaining, UNIT_LABEL } from '@/lib/format';
 import { auctionStatusMeta } from '@/lib/auction/status';
@@ -50,13 +51,16 @@ export default async function AuctionsPage() {
 
       {rows.length === 0 ? (
         <Card>
-          <CardContent className="py-16 text-center text-muted-foreground">
-            No auctions yet.{' '}
-            <Link href="/auctions/new" className="font-medium text-foreground hover:underline">
-              Post your first requirement
-            </Link>
-            .
-          </CardContent>
+          <EmptyState
+            icon={FileText}
+            title="No auctions yet"
+            description="Post a requirement — CAS, purity, quantity, packing — and qualified sellers bid blindly to your spec. It takes under five minutes."
+            action={
+              <Link href="/auctions/new" className={cn(buttonVariants())}>
+                <Plus className="h-4 w-4" /> Post your first requirement
+              </Link>
+            }
+          />
         </Card>
       ) : (
         GROUPS.map((g) => {
