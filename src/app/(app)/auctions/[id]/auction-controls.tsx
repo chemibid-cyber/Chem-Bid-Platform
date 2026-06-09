@@ -12,6 +12,7 @@ import {
 } from '../actions';
 import { SubmitButton } from '@/components/submit-button';
 import { Button } from '@/components/ui/button';
+import { ConfirmButton } from '@/components/ui/confirm-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -40,25 +41,22 @@ export function ExtendForm({ auctionId }: { auctionId: string }) {
 }
 
 export function CancelButton({ auctionId }: { auctionId: string }) {
-  const [pending, start] = useTransition();
-  const [error, setError] = useState<string | null>(null);
   return (
-    <div>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="text-destructive"
-        disabled={pending}
-        onClick={() => {
-          if (confirm('Cancel this auction? Sellers will be notified.'))
-            start(async () => setError((await cancelAuctionAction(auctionId))?.error ?? null));
-        }}
-      >
-        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-        Cancel auction
-      </Button>
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
-    </div>
+    <ConfirmButton
+      variant="ghost"
+      size="sm"
+      className="text-destructive"
+      title="Cancel this auction?"
+      description="Sellers who were notified will be told it's cancelled. This can't be undone."
+      confirmLabel="Cancel auction"
+      destructive
+      onConfirm={async () => {
+        const res = await cancelAuctionAction(auctionId);
+        if (res?.error) throw new Error(res.error);
+      }}
+    >
+      Cancel auction
+    </ConfirmButton>
   );
 }
 
@@ -74,21 +72,26 @@ export function CloneButton({ auctionId }: { auctionId: string }) {
 
 export function SpecDownloadButton({ auctionId }: { auctionId: string }) {
   const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      disabled={pending}
-      onClick={() =>
-        start(async () => {
-          const res = await getAuctionSpecUrlAction(auctionId);
-          if (res.url) window.open(res.url, '_blank');
-          else alert(res.error ?? 'Could not open file.');
-        })
-      }
-    >
-      {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-      Spec sheet
-    </Button>
+    <div>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={pending}
+        onClick={() =>
+          start(async () => {
+            setError(null);
+            const res = await getAuctionSpecUrlAction(auctionId);
+            if (res.url) window.open(res.url, '_blank');
+            else setError(res.error ?? 'Could not open file.');
+          })
+        }
+      >
+        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+        Spec sheet
+      </Button>
+      {error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}
+    </div>
   );
 }

@@ -11,6 +11,7 @@ import {
   getRequestSpecUrlAction,
 } from '../actions';
 import { Button } from '@/components/ui/button';
+import { ConfirmButton } from '@/components/ui/confirm-dialog';
 
 function useAction() {
   const [pending, start] = useTransition();
@@ -79,44 +80,47 @@ export function BlockControls({ auctionId }: { auctionId: string }) {
 }
 
 export function WithdrawButton({ auctionId }: { auctionId: string }) {
-  const { pending, error, run } = useAction();
   return (
-    <div>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="text-destructive"
-        disabled={pending}
-        onClick={() => {
-          if (confirm('Withdraw your bid? It stays in the audit trail but is removed from ranking.'))
-            run(() => withdrawBidAction(auctionId));
-        }}
-      >
-        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-        Withdraw bid
-      </Button>
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
-    </div>
+    <ConfirmButton
+      variant="ghost"
+      size="sm"
+      className="text-destructive"
+      title="Withdraw your bid?"
+      description="Your bid stays in the audit trail but is removed from ranking. You can re-bid while the auction is still open."
+      confirmLabel="Withdraw bid"
+      destructive
+      onConfirm={async () => {
+        const res = await withdrawBidAction(auctionId);
+        if (res?.error) throw new Error(res.error);
+      }}
+    >
+      Withdraw bid
+    </ConfirmButton>
   );
 }
 
 export function SellerSpecDownload({ auctionId }: { auctionId: string }) {
   const [pending, start] = useTransition();
+  const [error, setError] = useState<string | null>(null);
   return (
-    <Button
-      variant="outline"
-      size="sm"
-      disabled={pending}
-      onClick={() =>
-        start(async () => {
-          const res = await getRequestSpecUrlAction(auctionId);
-          if (res.url) window.open(res.url, '_blank');
-          else alert(res.error ?? 'Could not open file.');
-        })
-      }
-    >
-      {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
-      Spec sheet
-    </Button>
+    <div>
+      <Button
+        variant="outline"
+        size="sm"
+        disabled={pending}
+        onClick={() =>
+          start(async () => {
+            setError(null);
+            const res = await getRequestSpecUrlAction(auctionId);
+            if (res.url) window.open(res.url, '_blank');
+            else setError(res.error ?? 'Could not open file.');
+          })
+        }
+      >
+        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+        Spec sheet
+      </Button>
+      {error ? <p className="mt-1 text-xs text-destructive">{error}</p> : null}
+    </div>
   );
 }

@@ -111,7 +111,7 @@ export default async function ReviewPage({
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Review bids — {auction.name}</h1>
         <p className="text-muted-foreground">
-          {rows.length} bid{rows.length === 1 ? '' : 's'} · average total INR {formatRate(avg)}/{unit}
+          {rows.length} bid{rows.length === 1 ? '' : 's'} · average total ₹{formatRate(avg)}/{unit}
           {inStage2 && !closed ? ' · Stage-2 in progress' : ''}
         </p>
       </div>
@@ -149,7 +149,7 @@ export default async function ReviewPage({
             ) : (
               <div className="space-y-1 text-sm">
                 <p>
-                  Counter sent: <span className="font-semibold">INR {formatRate(auction.stage2Target)}/{unit}</span>
+                  Counter sent: <span className="font-semibold">₹{formatRate(auction.stage2Target)}/{unit}</span>
                 </p>
                 <p className="text-muted-foreground">
                   {stage2Open
@@ -192,7 +192,7 @@ export default async function ReviewPage({
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold">INR {formatRate(r.effective)}/{unit}</p>
+                    <p className="text-lg font-bold">₹{formatRate(r.effective)}/{unit}</p>
                     <p className="text-xs text-muted-foreground">effective (lower of S1/S2)</p>
                   </div>
                 </div>
@@ -202,7 +202,7 @@ export default async function ReviewPage({
                 <div className="grid gap-3 text-sm sm:grid-cols-4">
                   <div>
                     <p className="text-xs uppercase text-muted-foreground">Stage-1 total</p>
-                    <p className="font-medium">INR {formatRate(r.stage1Total)}/{unit}</p>
+                    <p className="font-medium">₹{formatRate(r.stage1Total)}/{unit}</p>
                     <p className="text-xs text-muted-foreground">
                       basic {formatRate(r.stage1Basic)} + freight {formatRate(r.stage1Freight)}
                     </p>

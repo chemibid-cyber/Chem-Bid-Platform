@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useRef } from 'react';
 import { useFormState } from 'react-dom';
-import { Loader2, Ban, Check } from 'lucide-react';
+import { Ban, Check } from 'lucide-react';
 import { confirmDealAction, blockSellerAction, type AuctionFormState } from '../../actions';
-import { SubmitButton } from '@/components/submit-button';
-import { Button } from '@/components/ui/button';
+import { ConfirmButton } from '@/components/ui/confirm-dialog';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export function ConfirmDealForm({
@@ -18,26 +17,31 @@ export function ConfirmDealForm({
   sellerName: string;
 }) {
   const [state, action] = useFormState<AuctionFormState, FormData>(confirmDealAction, null);
+  const formRef = useRef<HTMLFormElement>(null);
   return (
-    <form
-      action={action}
-      onSubmit={(e) => {
-        if (!confirm(`Confirm the deal with ${sellerName}? This records mutual intent and closes the auction.`)) {
-          e.preventDefault();
-        }
-      }}
-    >
-      <input type="hidden" name="auctionId" value={auctionId} />
-      <input type="hidden" name="bidId" value={bidId} />
+    <div>
+      {/* Hidden form keeps useFormState's redirect + error handling; the styled
+          dialog triggers it via requestSubmit() instead of a native confirm(). */}
+      <form ref={formRef} action={action} className="hidden">
+        <input type="hidden" name="auctionId" value={auctionId} />
+        <input type="hidden" name="bidId" value={bidId} />
+      </form>
       {state?.error ? (
         <Alert variant="destructive" className="mb-2">
           <AlertDescription>{state.error}</AlertDescription>
         </Alert>
       ) : null}
-      <SubmitButton size="sm" variant="success">
+      <ConfirmButton
+        variant="success"
+        size="sm"
+        title={`Confirm the deal with ${sellerName}?`}
+        description="This records the mutual intent of both parties under your signup Terms and closes the auction. It is not an automatically enforceable contract."
+        confirmLabel="Confirm deal"
+        onConfirm={() => formRef.current?.requestSubmit()}
+      >
         <Check className="h-4 w-4" /> Confirm deal
-      </SubmitButton>
-    </form>
+      </ConfirmButton>
+    </div>
   );
 }
 
@@ -48,24 +52,21 @@ export function BlockSellerButton({
   auctionId: string;
   sellerCompanyId: string;
 }) {
-  const [pending, start] = useTransition();
-  const [error, setError] = useState<string | null>(null);
   return (
-    <div>
-      <Button
-        variant="ghost"
-        size="sm"
-        className="text-destructive"
-        disabled={pending}
-        onClick={() => {
-          if (confirm('Block this seller for this CAS? They will be muted for your future requirements.'))
-            start(async () => setError((await blockSellerAction(auctionId, sellerCompanyId))?.error ?? null));
-        }}
-      >
-        {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Ban className="h-4 w-4" />}
-        Block
-      </Button>
-      {error ? <p className="text-xs text-destructive">{error}</p> : null}
-    </div>
+    <ConfirmButton
+      variant="ghost"
+      size="sm"
+      className="text-destructive"
+      title="Block this seller for this CAS?"
+      description="They'll be muted for your future requirements on this chemical. Their existing bid stays in the audit trail."
+      confirmLabel="Block seller"
+      destructive
+      onConfirm={async () => {
+        const res = await blockSellerAction(auctionId, sellerCompanyId);
+        if (res?.error) throw new Error(res.error);
+      }}
+    >
+      <Ban className="h-4 w-4" /> Block
+    </ConfirmButton>
   );
 }

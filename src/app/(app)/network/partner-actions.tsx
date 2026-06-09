@@ -4,22 +4,25 @@ import { useTransition } from 'react';
 import { Loader2 } from 'lucide-react';
 import { removePartnerAction, declinePartnerAction } from './actions';
 import { Button } from '@/components/ui/button';
+import { ConfirmButton } from '@/components/ui/confirm-dialog';
 
 export function RemovePartnerButton({ partnerId }: { partnerId: string }) {
-  const [pending, start] = useTransition();
   return (
-    <Button
+    <ConfirmButton
       variant="ghost"
       size="sm"
       className="text-destructive"
-      disabled={pending}
-      onClick={() => {
-        if (confirm('Remove this partner?')) start(() => void removePartnerAction(partnerId));
+      title="Remove this partner?"
+      description="They'll no longer be reachable through your Registered-Only auctions. You can re-add them anytime."
+      confirmLabel="Remove partner"
+      destructive
+      onConfirm={async () => {
+        const res = await removePartnerAction(partnerId);
+        if (res?.error) throw new Error(res.error);
       }}
     >
-      {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
       Remove
-    </Button>
+    </ConfirmButton>
   );
 }
 
