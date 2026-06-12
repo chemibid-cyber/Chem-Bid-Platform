@@ -2,6 +2,7 @@ import type { GstVerificationProvider } from './provider';
 import { MockGstProvider } from './mock';
 import { SurepassGstProvider } from './surepass';
 import { CashfreeGstProvider } from './cashfree';
+import { GstinCheckProvider } from './gstincheck';
 
 export type { GstVerificationProvider, GstVerificationResult } from './provider';
 
@@ -9,6 +10,8 @@ export type { GstVerificationProvider, GstVerificationResult } from './provider'
 export function getGstProvider(): GstVerificationProvider {
   const choice = (process.env.GST_PROVIDER ?? 'mock').toLowerCase();
   switch (choice) {
+    case 'gstincheck':
+      return new GstinCheckProvider();
     case 'cashfree':
       return new CashfreeGstProvider();
     case 'surepass':
