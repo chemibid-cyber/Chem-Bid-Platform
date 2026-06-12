@@ -171,6 +171,10 @@ export async function submitBidAction(_prev: BidFormState, formData: FormData): 
       coaOnDispatch,
       coaFileUrl: coaOnDispatch ? null : coaFileUrl,
       status: 'active',
+      // The bid row is created as a notification placeholder at targeting time,
+      // so created_at must be re-stamped at the FIRST real quote — it's the
+      // tie-break timestamp ("rewards first commitment"). Revisions keep it.
+      ...(isRevision ? {} : { createdAt: new Date() }),
       updatedAt: new Date(),
     })
     .where(eq(bids.id, bid.id));

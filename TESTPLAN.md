@@ -171,7 +171,37 @@ Repeatable QA for the whole app. Status legend:
 
 ---
 
-## C. Live QA run — 2026-06-10
+## C. Multi-user simulation — `scripts/sim-multiuser.ts` (run 2026-06-12, 25/25 ✅)
+
+Live-DB simulation using the REAL app engines (`runTargeting`, `computeTotalRate`, `rankOf`,
+`stage2Total`, `isValidStage2Rate`) — 11 sellers + the demo buyer. Repeatable:
+`npx tsx scripts/sim-multiuser.ts` then `--phase2`.
+
+| ID | Scenario | Result |
+|---|---|---|
+| A1–A4 | 11 sellers: 5 carry Acetone, 5 other chemicals, 1 Acetone-but-blocked → exactly the 5 unblocked Acetone sellers targeted | ✅ |
+| A5 | All 5 get in-app notifications (+ email send attempted per seller) | ✅ |
+| A6–A7 | 5 bids in different material/transport/tax shapes → blind ranks #1–#5 by full total | ✅ |
+| A8 | Deliberate ₹90.00 tie → earlier quote ranks ahead (tie-break) | ✅ |
+| A9–A10 | Withdraw → drops from count, others' ranks shift up | ✅ |
+| A11–A12 | Revise down → re-ranks to #1; revision keeps the original quote-time priority | ✅ |
+| A13 | Buyer-visible bid count excludes withdrawn | ✅ |
+| B1 | Past-deadline close via the REAL deployed cron → `awaiting_decision` | ✅ |
+| B2 | Stage-2 price-drop lock: final material above own S1 material rejected | ✅ |
+| B3–B4 | Stage-2 accept / final / reject / no-response → effective = min(S1 total, S2 material + carried freight+tax) | ✅ |
+| B5 | Winner = lowest effective | ✅ |
+
+**Browser verification on production (same auction):** seller S02 saw "#2 of 4 live bids" and
+only their own price (blind privacy holds at scale); buyer leaderboard showed all 4 bids ranked
+₹78 → ₹83 → ₹90 → ₹90 with tier breakdowns + Stage-2 outcomes; Confirm deal → Winner/Not-selected
+badges; DB: winner `won`, deal `final_total=78`, withdrawn bid preserved.
+
+**Bug found & fixed by this test:** placeholder bid rows are batch-created at targeting time, so
+`created_at` couldn't break price ties (rank order between equal bids was undefined). Fix:
+`created_at` is re-stamped at the seller's FIRST quote (revisions keep it); review leaderboard +
+export gained the same timestamp tie-break.
+
+## C2. Live QA run — 2026-06-10
 
 Drove the deployed app end-to-end (buyer + seller + operator). **Full core loop verified working:**
 post auction (CAS resolve → targeting) → seller gate (mask) → Accept (reveal) → full-qty bid → blind rank → cron close → review/leaderboard → confirm deal → Deal Confirmation Record → CSV export.

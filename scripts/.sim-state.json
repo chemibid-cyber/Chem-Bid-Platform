@@ -1,0 +1,61 @@
+{
+  "auctionId": "88488897-92f4-407f-8e3c-1550e7033cde",
+  "buyerUserId": "feeb6227-775b-41fd-89f4-a88bc173c683",
+  "sellers": {
+    "S01": {
+      "companyId": "04cae0f8-d45b-41ef-93fb-8b0299b7cb12",
+      "userId": "3a3ec85f-b2f9-4d2c-ae8e-051fc84254b7",
+      "email": "s01@sim.test"
+    },
+    "S02": {
+      "companyId": "a287705d-7d1e-454d-bfe6-0265154e28ab",
+      "userId": "b6de7db6-4691-440b-8c75-bc0b10810ee4",
+      "email": "s02@sim.test"
+    },
+    "S03": {
+      "companyId": "7fe47f2c-62b3-4aeb-90de-80d647acc66a",
+      "userId": "b1e5e62b-589f-4f97-ac17-5f82987a3379",
+      "email": "s03@sim.test"
+    },
+    "S04": {
+      "companyId": "849c7c40-6c55-46d9-b067-d481d340b5f9",
+      "userId": "1617496d-ed81-48c3-abc0-bfa4ffebde74",
+      "email": "s04@sim.test"
+    },
+    "S05": {
+      "companyId": "a151a662-59b8-451d-9a12-2c4617a28c87",
+      "userId": "d4eeaad6-cb93-42c2-93b9-a42850b351db",
+      "email": "s05@sim.test"
+    },
+    "S06": {
+      "companyId": "08b95f5c-66c9-4a62-9e1b-8c772103b17c",
+      "userId": "f35b5d85-94ae-474d-9623-b5c80e2a92ac",
+      "email": "s06@sim.test"
+    },
+    "S07": {
+      "companyId": "56df5a11-d3f0-4b7d-85e9-b026b77a052b",
+      "userId": "33b907ac-6796-42e7-a0db-6c66bfec72c8",
+      "email": "s07@sim.test"
+    },
+    "S08": {
+      "companyId": "d36e1220-a8f2-405e-a11d-b20c3c02eee2",
+      "userId": "422f6cc0-6305-4324-a0e8-7e705ec3ad50",
+      "email": "s08@sim.test"
+    },
+    "S09": {
+      "companyId": "91d1c07e-2377-4c01-935d-7dabfbf389cf",
+      "userId": "60ff96ca-b73a-41c7-bf17-36ebccf9bc2c",
+      "email": "s09@sim.test"
+    },
+    "S10": {
+      "companyId": "cbac30a5-46f1-4824-a936-0c14ad8c96a5",
+      "userId": "5a9a9e49-28a7-4061-b405-269f5a25ae60",
+      "email": "s10@sim.test"
+    },
+    "S11": {
+      "companyId": "50f82294-273c-4275-9ea9-16bafb781a87",
+      "userId": "dc5e61f8-074f-4920-ba64-9e16811ac803",
+      "email": "s11@sim.test"
+    }
+  }
+}

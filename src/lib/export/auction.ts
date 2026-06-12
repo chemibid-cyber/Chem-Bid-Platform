@@ -55,7 +55,7 @@ export async function getAuctionExportData(
     .from(bids)
     .innerJoin(companies, eq(bids.sellerCompanyId, companies.id))
     .where(and(eq(bids.auctionId, auctionId), isNotNull(bids.stage1Total)))
-    .orderBy(asc(bids.stage1Total));
+    .orderBy(asc(bids.stage1Total), asc(bids.createdAt));
 
   // Authorization: viewer must be the buyer OR a participating seller.
   const sellerRow = all.find((b) => b.sellerCompanyId === companyId);

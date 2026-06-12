@@ -53,6 +53,7 @@ export default async function ReviewPage({
       stage2Action: bids.stage2Action,
       stage2Rate: bids.stage2Rate,
       status: bids.status,
+      createdAt: bids.createdAt,
       sellerName: companies.legalName,
       contactFirst: users.firstName,
       contactLast: users.lastName,
@@ -83,7 +84,13 @@ export default async function ReviewPage({
         r.stage2Rate ? stage2Total(Number(r.stage2Rate), r.stage1Freight, r.stage1Tax) : null,
       ),
     }))
-    .sort((a, b) => a.effective - b.effective || Number(a.stage1Total) - Number(b.stage1Total));
+    .sort(
+      (a, b) =>
+        a.effective - b.effective ||
+        Number(a.stage1Total) - Number(b.stage1Total) ||
+        // Full tie → earlier bid wins (same rule as the blind rank).
+        a.createdAt.getTime() - b.createdAt.getTime(),
+    );
 
   // Sellers this buyer has blocked for this CAS (show a tag; bids retained).
   const blockedRows = await db
