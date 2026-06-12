@@ -80,7 +80,8 @@ export function AppHeader({
         </div>
 
         <div className="ml-auto flex items-center gap-3">
-          {canToggleMode(user) ? <ModeToggle mode={mode} /> : null}
+          {/* Buy/Sell is meaningless for pure service providers (admin or not). */}
+          {!providerOnly && canToggleMode(user) ? <ModeToggle mode={mode} /> : null}
 
           <Link
             href="/notifications"
