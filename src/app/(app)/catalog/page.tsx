@@ -9,6 +9,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { buttonVariants } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/help';
 import { cn } from '@/lib/utils';
 import { GRADE_LABEL } from '@/lib/format';
@@ -17,10 +18,15 @@ import { CatalogItemActions } from './item-actions';
 
 export const metadata = { title: 'Catalog' };
 
-export default async function CatalogPage() {
+export default async function CatalogPage({
+  searchParams,
+}: {
+  searchParams?: { matched?: string };
+}) {
   const { user } = await requireUser();
   const mode = getActiveMode(user);
   const profileType = mode === 'sell' ? 'sales' : 'purchase';
+  const matched = Number(searchParams?.matched ?? 0);
 
   const items = await db
     .select({
@@ -57,6 +63,18 @@ export default async function CatalogPage() {
           <Plus className="h-4 w-4" /> Add product
         </Link>
       </div>
+
+      {matched > 0 ? (
+        <Alert variant="success">
+          <AlertDescription>
+            Your new product matched {matched} live requirement{matched === 1 ? '' : 's'} —{' '}
+            <Link href="/requests" className="font-medium underline">
+              open your Requests inbox
+            </Link>{' '}
+            to accept &amp; quote.
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {items.length === 0 ? (
         <Card>

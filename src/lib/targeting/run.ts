@@ -1,4 +1,4 @@
-import { and, eq, ne } from 'drizzle-orm';
+import { and, eq, ne, or, isNull } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import {
   catalogItems,
@@ -8,9 +8,11 @@ import {
   registeredPartners,
   notifications,
   bids,
+  auctions,
   type Auction,
 } from '@/lib/db/schema';
 import { isQualifiedSeller, type AuctionTarget, type SellerCandidate } from '@/lib/targeting';
+import { recordAudit, AuditAction } from '@/lib/audit';
 import { sendEmail } from '@/lib/email';
 import { sellerNotifiedEmail } from '@/lib/email/templates';
 
@@ -85,17 +87,32 @@ export async function runTargeting(auction: Auction): Promise<{ notified: number
   };
   let qualified = candidates.filter((c) => isQualifiedSeller(target, c));
 
-  // 3. Exclude sellers who blocked this buyer (all-scope or this CAS).
+  // 3. Blocks, BOTH directions:
+  //    (a) sellers who blocked this buyer never hear from them again;
+  //    (b) sellers this buyer blocked are muted for the buyer's future requirements.
   const blockRows = await db
-    .select({ blockerCompanyId: blocks.blockerCompanyId, scope: blocks.scope, casNumber: blocks.casNumber })
+    .select({
+      blockerCompanyId: blocks.blockerCompanyId,
+      blockedCompanyId: blocks.blockedCompanyId,
+      scope: blocks.scope,
+      casNumber: blocks.casNumber,
+    })
     .from(blocks)
-    .where(eq(blocks.blockedCompanyId, auction.buyerCompanyId));
-  const blockedBy = new Set(
-    blockRows
-      .filter((b) => b.scope === 'all' || b.casNumber === auction.casNumber)
-      .map((b) => b.blockerCompanyId),
-  );
-  qualified = qualified.filter((c) => !blockedBy.has(c.companyId));
+    .where(
+      or(
+        eq(blocks.blockedCompanyId, auction.buyerCompanyId),
+        eq(blocks.blockerCompanyId, auction.buyerCompanyId),
+      ),
+    );
+  const applies = (b: (typeof blockRows)[number]) =>
+    b.scope === 'all' || b.casNumber === auction.casNumber;
+  const excluded = new Set<string>();
+  for (const b of blockRows) {
+    if (!applies(b)) continue;
+    if (b.blockedCompanyId === auction.buyerCompanyId) excluded.add(b.blockerCompanyId); // (a)
+    if (b.blockerCompanyId === auction.buyerCompanyId) excluded.add(b.blockedCompanyId); // (b)
+  }
+  qualified = qualified.filter((c) => !excluded.has(c.companyId));
 
   // 4. Registered-Only: restrict to ACTIVE partners for this CAS.
   if (auction.privacyMode === 'registered' && auction.casNumber) {
@@ -171,4 +188,153 @@ export async function runTargeting(auction: Auction): Promise<{ notified: number
   }
 
   return { notified: recipients.length };
+}
+
+export interface RetroMatchInput {
+  itemId: string;
+  companyId: string;
+  companyGstin: string;
+  companySuspended: boolean;
+  ownerUserId: string;
+  ownerEmail: string;
+  casNumber: string | null;
+  name: string;
+  isMixture: boolean;
+  mixtureText: string | null;
+  grade: string;
+  roles: string[];
+}
+
+/**
+ * The mirror of runTargeting: when a seller adds a SALES catalog item, check
+ * auctions that are ALREADY live and pull the seller into any they qualify for
+ * (same rules: CAS/token match, supplier filter, blocks both ways,
+ * Registered-Only). Idempotent — sellers already invited are never re-notified.
+ */
+export async function retroMatchSalesItem(input: RetroMatchInput): Promise<{ matched: number }> {
+  if (input.companySuspended) return { matched: 0 };
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
+
+  // Live auctions from OTHER companies that could match this item:
+  // exact-CAS auctions for a CAS item, plus mixture auctions (token match) for all.
+  const candidates = await db
+    .select()
+    .from(auctions)
+    .where(
+      and(
+        eq(auctions.status, 'active'),
+        ne(auctions.buyerCompanyId, input.companyId),
+        input.casNumber
+          ? or(eq(auctions.casNumber, input.casNumber), isNull(auctions.casNumber))
+          : isNull(auctions.casNumber),
+      ),
+    );
+  if (candidates.length === 0) return { matched: 0 };
+
+  // All blocks touching this seller company, once.
+  const blockRows = await db
+    .select({
+      blockerCompanyId: blocks.blockerCompanyId,
+      blockedCompanyId: blocks.blockedCompanyId,
+      scope: blocks.scope,
+      casNumber: blocks.casNumber,
+    })
+    .from(blocks)
+    .where(
+      or(eq(blocks.blockerCompanyId, input.companyId), eq(blocks.blockedCompanyId, input.companyId)),
+    );
+
+  const seller: SellerCandidate = {
+    companyId: input.companyId,
+    casNumber: input.casNumber,
+    name: input.name,
+    isMixture: input.isMixture,
+    mixtureText: input.mixtureText,
+    grade: input.grade,
+    roles: input.roles,
+  };
+
+  let matched = 0;
+  for (const auction of candidates) {
+    const target: AuctionTarget = {
+      casNumber: auction.casNumber,
+      name: auction.name,
+      isMixture: !auction.casNumber,
+      matchText: `${auction.name} ${auction.remarks ?? ''}`,
+      grade: '',
+      supplierFilter: auction.supplierFilter,
+    };
+    if (!isQualifiedSeller(target, seller)) continue;
+
+    // Blocks, both directions, scoped to this auction's CAS.
+    const blocked = blockRows.some((b) => {
+      if (b.scope !== 'all' && b.casNumber !== auction.casNumber) return false;
+      const sellerBlockedBuyer =
+        b.blockerCompanyId === input.companyId && b.blockedCompanyId === auction.buyerCompanyId;
+      const buyerBlockedSeller =
+        b.blockerCompanyId === auction.buyerCompanyId && b.blockedCompanyId === input.companyId;
+      return sellerBlockedBuyer || buyerBlockedSeller;
+    });
+    if (blocked) continue;
+
+    // Registered-Only auctions stay restricted to the buyer's active partners.
+    if (auction.privacyMode === 'registered') {
+      if (!auction.casNumber) continue;
+      const [partner] = await db
+        .select({ id: registeredPartners.id })
+        .from(registeredPartners)
+        .where(
+          and(
+            eq(registeredPartners.buyerCompanyId, auction.buyerCompanyId),
+            eq(registeredPartners.casNumber, auction.casNumber),
+            eq(registeredPartners.partnerGstin, input.companyGstin),
+            eq(registeredPartners.status, 'active'),
+          ),
+        )
+        .limit(1);
+      if (!partner) continue;
+    }
+
+    // Idempotency: only act when the request row is genuinely new.
+    const inserted = await db
+      .insert(bids)
+      .values({
+        auctionId: auction.id,
+        sellerCompanyId: input.companyId,
+        sellerUserId: input.ownerUserId,
+        gateState: 'notified',
+        status: 'active',
+      })
+      .onConflictDoNothing({ target: [bids.auctionId, bids.sellerCompanyId] })
+      .returning({ id: bids.id });
+    if (inserted.length === 0) continue;
+
+    matched += 1;
+    await db.insert(notifications).values({
+      userId: input.ownerUserId,
+      type: 'auction.new',
+      payload: {
+        auctionId: auction.id,
+        name: auction.name,
+        quantity: auction.quantity,
+        unit: auction.unit,
+      },
+    });
+    const tmpl = sellerNotifiedEmail({
+      productName: auction.name,
+      quantity: String(auction.quantity),
+      unit: auction.unit,
+      viewUrl: `${appUrl}/requests/${auction.id}`,
+    });
+    await sendEmail({ to: input.ownerEmail, subject: tmpl.subject, html: tmpl.html, text: tmpl.text });
+    await recordAudit({
+      actorUserId: input.ownerUserId,
+      entityType: 'auction',
+      entityId: auction.id,
+      action: AuditAction.AuctionRetroMatched,
+      snapshot: { sellerCompanyId: input.companyId, catalogItemId: input.itemId },
+    });
+  }
+
+  return { matched };
 }

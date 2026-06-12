@@ -12,6 +12,7 @@ import {
   Megaphone,
   Star,
   Gavel,
+  Truck,
 } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
 import { getActiveMode, canToggleMode } from '@/lib/auth/mode';
@@ -34,11 +35,13 @@ const BUY_ACTIONS = [
   { href: '/auctions', label: 'My auctions', icon: FileText, desc: 'Active, closed and unsuccessful requests.' },
   { href: '/network', label: 'Vendor network', icon: Network, desc: 'Register trusted suppliers by GSTIN + CAS.' },
   { href: '/catalog', label: 'Purchase catalog', icon: Package, desc: 'Track the chemicals you buy.' },
+  { href: '/services', label: 'Services hub', icon: Truck, desc: 'Transport & packing — open-identity quotes.' },
 ];
 
 const SELL_ACTIONS = [
   { href: '/requests', label: 'Incoming requests', icon: Inbox, desc: 'Accept & quote, ignore, or block.' },
   { href: '/catalog', label: 'Sales catalog', icon: Package, desc: 'List what you supply, with CAS + grade.' },
+  { href: '/services', label: 'Services hub', icon: Truck, desc: 'Transport & packing — open-identity quotes.' },
 ];
 
 function StatCard({ href, label, value, tone }: { href: string; label: string; value: number; tone?: 'brand' | 'warning' }) {

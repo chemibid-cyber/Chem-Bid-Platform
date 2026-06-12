@@ -12,6 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { averageTotal, effectiveTotal } from '@/lib/ranking';
+import { stage2Total } from '@/lib/pricing';
 import { formatRate, timeRemaining, UNIT_LABEL, PAYMENT_TERMS_LABEL } from '@/lib/format';
 import { Stage2LaunchForm } from './stage2-launch-form';
 import { CoaDownload } from './coa-download';
@@ -43,6 +44,7 @@ export default async function ReviewPage({
       sellerCompanyId: bids.sellerCompanyId,
       stage1Basic: bids.stage1Basic,
       stage1Freight: bids.stage1Freight,
+      stage1Tax: bids.stage1Tax,
       stage1Total: bids.stage1Total,
       paymentTerms: bids.paymentTerms,
       leadTimeDays: bids.leadTimeDays,
@@ -71,10 +73,15 @@ export default async function ReviewPage({
     .orderBy(asc(bids.stage1Total));
 
   // Super-comparison: rank by the LOWER of Stage-1 / Stage-2 (effective) total.
+  // Stage-2 re-prices the MATERIAL rate only — the seller's Stage-1 transport
+  // and tax carry over into the all-in Stage-2 total.
   const ranked = rows
     .map((r) => ({
       ...r,
-      effective: effectiveTotal(Number(r.stage1Total), r.stage2Rate ? Number(r.stage2Rate) : null),
+      effective: effectiveTotal(
+        Number(r.stage1Total),
+        r.stage2Rate ? stage2Total(Number(r.stage2Rate), r.stage1Freight, r.stage1Tax) : null,
+      ),
     }))
     .sort((a, b) => a.effective - b.effective || Number(a.stage1Total) - Number(b.stage1Total));
 
@@ -91,7 +98,11 @@ export default async function ReviewPage({
 
   const unit = UNIT_LABEL[auction.unit] ?? auction.unit;
   const avg = averageTotal(rows.map((r) => Number(r.stage1Total)));
-  const lowest = ranked[0]?.stage1Total ?? '';
+  // The counter is on the MATERIAL rate — suggest from the lowest material bid.
+  const lowest =
+    ranked.length > 0
+      ? String(Math.min(...ranked.map((r) => Number(r.stage1Basic ?? r.stage1Total))))
+      : '';
   const inStage2 = auction.stage === 'stage2';
   const stage2Open = inStage2 && auction.stage2ClosesAt && auction.stage2ClosesAt.getTime() > Date.now();
   const closed = auction.status === 'closed';
@@ -149,7 +160,8 @@ export default async function ReviewPage({
             ) : (
               <div className="space-y-1 text-sm">
                 <p>
-                  Counter sent: <span className="font-semibold">₹{formatRate(auction.stage2Target)}/{unit}</span>
+                  Counter sent: <span className="font-semibold">₹{formatRate(auction.stage2Target)}/{unit}</span>{' '}
+                  <span className="text-muted-foreground">(material rate)</span>
                 </p>
                 <p className="text-muted-foreground">
                   {stage2Open
@@ -204,7 +216,8 @@ export default async function ReviewPage({
                     <p className="text-xs uppercase text-muted-foreground">Stage-1 total</p>
                     <p className="font-medium">₹{formatRate(r.stage1Total)}/{unit}</p>
                     <p className="text-xs text-muted-foreground">
-                      basic {formatRate(r.stage1Basic)} + freight {formatRate(r.stage1Freight)}
+                      material {formatRate(r.stage1Basic)} + transport {formatRate(r.stage1Freight)} + tax{' '}
+                      {formatRate(r.stage1Tax ?? 0)}
                     </p>
                   </div>
                   <div>
@@ -216,7 +229,7 @@ export default async function ReviewPage({
                     <p className="font-medium">{r.leadTimeDays != null ? `${r.leadTimeDays} days` : '—'}</p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase text-muted-foreground">Stage-2</p>
+                    <p className="text-xs uppercase text-muted-foreground">Stage-2 (material)</p>
                     <p className="font-medium">
                       {r.stage2Action === 'accept'
                         ? `Accepted ${formatRate(auction.stage2Target)}`
@@ -228,6 +241,11 @@ export default async function ReviewPage({
                               ? 'No response'
                               : '—'}
                     </p>
+                    {r.stage2Rate ? (
+                      <p className="text-xs text-muted-foreground">
+                        all-in ₹{formatRate(stage2Total(Number(r.stage2Rate), r.stage1Freight, r.stage1Tax))}/{unit}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
 

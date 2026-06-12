@@ -22,6 +22,7 @@ import { istLocalToDate, PAYMENT_TERMS_LABEL } from '@/lib/format';
 import { uploadFile, signedUrl } from '@/lib/storage';
 import { runTargeting } from '@/lib/targeting/run';
 import { effectiveTotal } from '@/lib/ranking';
+import { stage2Total } from '@/lib/pricing';
 import { rateLimit, dayKey } from '@/lib/ratelimit';
 import { recordAudit, AuditAction } from '@/lib/audit';
 import { sendEmail } from '@/lib/email';
@@ -385,9 +386,13 @@ export async function confirmDealAction(
     .limit(1);
   if (!winner) return { error: 'That bid is not eligible.' };
 
+  // Stage-2 re-prices the material only — freight + tax carry over into the
+  // all-in Stage-2 total before taking the lower of the two.
   const finalTotal = effectiveTotal(
     Number(winner.stage1Total),
-    winner.stage2Rate ? Number(winner.stage2Rate) : null,
+    winner.stage2Rate
+      ? stage2Total(Number(winner.stage2Rate), winner.stage1Freight, winner.stage1Tax)
+      : null,
   );
 
   let dealId = '';

@@ -1,7 +1,9 @@
 /**
  * Applies the Supabase SQL files (RLS + storage bucket) against DATABASE_URL,
  * in order, using the simple query protocol (supports multi-statement + $$ bodies).
- * Run after `npm run db:migrate`:  node scripts/apply-sql.mjs
+ * Run after `npm run db:migrate`:
+ *   node scripts/apply-sql.mjs                       # the default file set
+ *   node scripts/apply-sql.mjs supabase/04_x.sql ... # specific file(s)
  */
 import { config } from 'dotenv';
 config({ path: '.env.local' });
@@ -15,7 +17,15 @@ if (!url) {
   process.exit(1);
 }
 
-const files = ['supabase/01_enable_rls.sql', 'supabase/02_policies.sql', 'supabase/03_storage.sql'];
+const files =
+  process.argv.length > 2
+    ? process.argv.slice(2)
+    : [
+        'supabase/01_enable_rls.sql',
+        'supabase/02_policies.sql',
+        'supabase/03_storage.sql',
+        'supabase/04_services.sql',
+      ];
 
 const sql = postgres(url, { max: 1 });
 

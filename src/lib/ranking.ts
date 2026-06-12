@@ -38,10 +38,14 @@ export function rankOf(bids: readonly Rankable[], bidId: string): number | null 
   return found ? found.rank : null;
 }
 
-/** Lower of Stage-1 total and a (possibly null) Stage-2 rate. */
-export function effectiveTotal(stage1Total: number, stage2Rate: number | null | undefined): number {
-  if (stage2Rate == null || !Number.isFinite(stage2Rate)) return stage1Total;
-  return Math.min(stage1Total, stage2Rate);
+/**
+ * Lower of the Stage-1 total and a (possibly null) Stage-2 total.
+ * NOTE: pass the seller's all-in Stage-2 TOTAL (material + carried-over freight
+ * + tax — see pricing.stage2Total), not the bare Stage-2 material rate.
+ */
+export function effectiveTotal(stage1Total: number, stage2TotalAllIn: number | null | undefined): number {
+  if (stage2TotalAllIn == null || !Number.isFinite(stage2TotalAllIn)) return stage1Total;
+  return Math.min(stage1Total, stage2TotalAllIn);
 }
 
 export function averageTotal(totals: readonly number[]): number {

@@ -104,7 +104,20 @@ export function AuctionForm({
         <div className="space-y-2">
           <Label htmlFor="casNumber">CAS number</Label>
           <div className="flex gap-2">
-            <Input id="casNumber" name="casNumber" value={cas} onChange={(e) => setCas(e.target.value)} placeholder="108-88-3" />
+            <Input
+              id="casNumber"
+              name="casNumber"
+              value={cas}
+              onChange={(e) => setCas(e.target.value)}
+              onKeyDown={(e) => {
+                // Enter resolves the CAS instead of submitting the half-filled form.
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  doResolve();
+                }
+              }}
+              placeholder="108-88-3"
+            />
             <Button type="button" variant="outline" onClick={doResolve} disabled={resolving}>
               {resolving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
               Resolve

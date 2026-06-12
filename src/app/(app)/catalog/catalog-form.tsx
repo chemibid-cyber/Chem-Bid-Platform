@@ -123,6 +123,13 @@ export function CatalogForm({ profileLabel }: { profileLabel: string }) {
               placeholder="108-88-3"
               value={cas}
               onChange={(e) => setCas(e.target.value)}
+              onKeyDown={(e) => {
+                // Enter resolves the CAS instead of submitting the half-filled form.
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  doResolve();
+                }
+              }}
             />
             <Button type="button" variant="outline" onClick={doResolve} disabled={resolving}>
               {resolving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}

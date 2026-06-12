@@ -244,6 +244,20 @@ Applied `/plan-eng-review` discipline to the decision-complete PRD. No scope cha
 
 All 8 build prompts shipped + both CSO gates + QA smoke. Builds clean, deploy-ready. Phase-2/3/4 fences held: no partial bids, no AI feed, no proactive-share *negotiation* UI (schema stub only), no web push/SMS/2FA, no reputation beyond completion-score, no multi-GSTIN rollup, no multi-round counters. Remaining to go live = the user's Supabase + Vercel + Resend keys (README + OPERATIONS).
 
+### 2026-06-12 — User-directed batch: UX bugs, emails, retro-targeting, 3-tier pricing, Service Providers Hub
+
+User-mandated changes (product owner instructions; §2 fences NOT crossed — bids stay full-quantity single-winner, Stage-2 stays single-round):
+
+- **CAS Enter-to-resolve:** Enter in the CAS field now triggers Resolve (was submitting the half-filled form). Auction + catalog forms.
+- **Mode toggle → dashboard:** switching Buy/Sell always lands on `/dashboard` (was staying on the current page, stranding users on wrong-mode screens).
+- **Targeting blocks now bidirectional:** `runTargeting` previously only excluded sellers who blocked the buyer; now ALSO excludes sellers the buyer blocked (the "muted for future requirements" promise was unenforced).
+- **Retro-match (`retroMatchSalesItem`):** adding a SALES catalog item now scans ACTIVE auctions and pulls the seller into any they qualify for (same rules: CAS/token, supplier filter, blocks both ways, Registered-Only, suspended-skip; idempotent via the bids unique constraint). Catalog page shows a "matched N live requirements" banner via `?matched=N`.
+- **Emails:** root cause of "no emails" was no `RESEND_API_KEY` in the prod env. Key now in `.env.local`; transport logs failures loudly. NOTE: with `onboarding@resend.dev`, Resend test mode only delivers to the account owner's inbox — verify a domain + set `EMAIL_FROM` for real recipients. Key must also be set in Vercel env.
+- **3-tier bid pricing (user decision):** Total = MATERIAL (basic) + TRANSPORT (freight) + TAX (per-unit, ≥0, default 0; `bids.stage1_tax`). Ranking/leaderboard/export always use the FULL total. Ex-Works still zeroes freight only.
+- **Stage-2 on the MATERIAL rate (user decision):** `auctions.stage2_target` + `bids.stage2_rate` are now material-basis; each seller's S1 freight+tax carry over (`pricing.stage2Total`); price-drop lock = final material ≤ S1 material; effective = min(S1 total, S2 material + carryover). Single round preserved.
+- **Service Providers Hub (new module, user spec):** open-identity (NO blind) transport + packing-material marketplace. `service_provider_profiles` (company opt-in: vehicle classes / packing types), `service_requests` (transport: material, gross kg, lot kg, vehicle checkboxes, pickup/drop; packing: type/condition/pieces/spec/weight/basis; both: baseline payment terms + description), `service_quotes` (rate ₹/kg or ₹/piece + ABSOLUTE tax ₹; Total = rate×qty + tax; optional alternative-payment-terms text; unique per provider+request). Instant email broadcast to matching providers on publish; accept → others declined + request closed; dual-sided Service History at `/services/history`. Routes under `/services/*`; nav + dashboard cards in both modes; RLS in `supabase/04_services.sql` (profiles+requests open-read to authenticated; quotes readable only by provider + needer + operator). All mutations audited.
+- Migration `drizzle/0002_worthless_doctor_faustus.sql` (additive only) applied to live Supabase + RLS. 59 unit tests green (8 pricing incl. tax + material lock, 6 services totals/matching).
+
 ## 10. Blocked / needs human (append-only)
 
 _(empty — record real blockers here; do NOT resolve by violating §2)_

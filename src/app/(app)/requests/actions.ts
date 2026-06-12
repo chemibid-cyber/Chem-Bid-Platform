@@ -112,6 +112,7 @@ const bidSchema = z.object({
   auctionId: z.string().uuid(),
   basic: z.string().min(1),
   freight: z.string().optional(),
+  tax: z.string().optional(),
   paymentTerms: z.enum(['advance', 'net15', 'net30', 'net45', 'lc']),
   leadTimeDays: z.string().optional(),
   coaOnDispatch: z.string().optional(),
@@ -135,12 +136,13 @@ export async function submitBidAction(_prev: BidFormState, formData: FormData): 
 
   const basic = Number(data.basic);
   const freightInput = Number(data.freight ?? '0');
+  const tax = Number(data.tax?.trim() ? data.tax : '0');
   const basis = auction.logisticsBasis;
-  const pricing = validateBidPricing({ basic, freight: freightInput, basis });
+  const pricing = validateBidPricing({ basic, freight: freightInput, tax, basis });
   if (!pricing.ok) return { error: pricing.errors.join(' ') };
 
   const effFreight = basis === 'exworks' ? 0 : freightInput;
-  const total = computeTotalRate({ basic, freight: freightInput, basis });
+  const total = computeTotalRate({ basic, freight: freightInput, tax, basis });
 
   // COA: required unless make-to-order ("COA on dispatch").
   const coaOnDispatch = data.coaOnDispatch === 'on';
@@ -162,6 +164,7 @@ export async function submitBidAction(_prev: BidFormState, formData: FormData): 
     .set({
       stage1Basic: String(basic),
       stage1Freight: String(effFreight),
+      stage1Tax: String(Math.max(0, tax)),
       stage1Total: String(total),
       paymentTerms: data.paymentTerms,
       leadTimeDays: data.leadTimeDays ? Number(data.leadTimeDays) : null,
@@ -177,7 +180,7 @@ export async function submitBidAction(_prev: BidFormState, formData: FormData): 
     entityType: 'bid',
     entityId: bid.id,
     action: isRevision ? AuditAction.BidRevised : AuditAction.BidSubmitted,
-    snapshot: { total, basic, freight: effFreight, paymentTerms: data.paymentTerms },
+    snapshot: { total, basic, freight: effFreight, tax, paymentTerms: data.paymentTerms },
   });
   revalidatePath(`/requests/${data.auctionId}`);
   return { success: isRevision ? 'Bid revised.' : 'Bid submitted.' };
@@ -248,7 +251,9 @@ export async function getRequestSpecUrlAction(
 
 /**
  * Seller responds to the Stage-2 counter: Accept / Reject / Final alternative.
- * PRICE-DROP LOCK: a Final rate may never exceed the seller's Stage-1 total.
+ * Negotiation is on the MATERIAL rate — the seller's Stage-1 freight + tax
+ * carry over unchanged. PRICE-DROP LOCK: a Final material rate may never
+ * exceed the seller's Stage-1 material rate.
  * Reject leaves Stage-1 standing (the leaderboard takes the lower of the two).
  */
 export async function stage2RespondAction(
@@ -266,13 +271,16 @@ export async function stage2RespondAction(
     return { error: 'The Stage-2 window has closed.' };
   }
 
+  const stage1Material = Number(bid.stage1Basic ?? bid.stage1Total);
   let stage2Rate: string | null = null;
   if (action === 'accept') {
     stage2Rate = auction.stage2Target;
   } else if (action === 'final') {
     const rate = Number(finalRateRaw);
-    if (!isValidStage2Rate(rate, Number(bid.stage1Total))) {
-      return { error: `Your final rate must be greater than 0 and at most your Stage-1 total (₹${bid.stage1Total}).` };
+    if (!isValidStage2Rate(rate, stage1Material)) {
+      return {
+        error: `Your final material rate must be greater than 0 and at most your Stage-1 material rate (₹${stage1Material}). Transport + tax carry over from Stage-1.`,
+      };
     }
     stage2Rate = String(rate);
   }

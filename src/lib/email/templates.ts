@@ -100,14 +100,14 @@ export function counterReceivedEmail(opts: {
   viewUrl: string;
 }): Tmpl {
   return {
-    subject: `Counter-offer: ₹${opts.rate}/${opts.unit.toUpperCase()} for ${opts.productName}`,
+    subject: `Counter-offer: ₹${opts.rate}/${opts.unit.toUpperCase()} material rate for ${opts.productName}`,
     html: layout(
       'The buyer sent a counter-offer',
-      `<p>The buyer set a single counter rate of <strong>₹${opts.rate}/${opts.unit.toUpperCase()}</strong> for ${opts.productName}.</p>
-       <p>You have 24 hours to Accept, Reject, or submit a Final alternative rate (which cannot exceed your Stage-1 bid).</p>
+      `<p>The buyer set a single counter of <strong>₹${opts.rate}/${opts.unit.toUpperCase()}</strong> on the <strong>material rate</strong> for ${opts.productName}. Your transport + tax carry over from your Stage-1 bid.</p>
+       <p>You have 24 hours to Accept, Reject, or submit a Final material rate (which cannot exceed your Stage-1 material rate).</p>
        <p style="margin:20px 0">${button(opts.viewUrl, 'Respond to the counter')}</p>`,
     ),
-    text: `Counter-offer ₹${opts.rate}/${opts.unit} for ${opts.productName}. Respond within 24h: ${opts.viewUrl}`,
+    text: `Counter-offer ₹${opts.rate}/${opts.unit} (material rate) for ${opts.productName}. Respond within 24h: ${opts.viewUrl}`,
   };
 }
 
@@ -119,14 +119,73 @@ export function stage2UrgencyEmail(opts: {
 }): Tmpl {
   return {
     // The ₹ rate is required to be in the subject line (FR-6.3).
-    subject: `Final 2 hours — counter rate ₹${opts.rate}/${opts.unit.toUpperCase()} for ${opts.productName}`,
+    subject: `Final 2 hours — counter ₹${opts.rate}/${opts.unit.toUpperCase()} material rate for ${opts.productName}`,
     html: layout(
       'Counter-offer closing soon',
-      `<p>The buyer's counter rate is <strong>₹${opts.rate}/${opts.unit.toUpperCase()}</strong> for ${opts.productName}.</p>
-       <p>You have under 2 hours to Accept, Reject, or submit a Final rate.</p>
+      `<p>The buyer's counter on the <strong>material rate</strong> is <strong>₹${opts.rate}/${opts.unit.toUpperCase()}</strong> for ${opts.productName}.</p>
+       <p>You have under 2 hours to Accept, Reject, or submit a Final material rate.</p>
        <p style="margin:20px 0">${button(opts.viewUrl, 'Respond now')}</p>`,
     ),
-    text: `Final 2 hours. Counter rate ₹${opts.rate}/${opts.unit} for ${opts.productName}. Respond: ${opts.viewUrl}`,
+    text: `Final 2 hours. Counter ₹${opts.rate}/${opts.unit} (material rate) for ${opts.productName}. Respond: ${opts.viewUrl}`,
+  };
+}
+
+export function serviceInquiryEmail(opts: {
+  kindLabel: string; // "Transport" | "Packing material"
+  neederName: string;
+  summary: string; // e.g. "Toluene · 10,000 kg · SS Tanker · Mumbai → Vapi"
+  paymentTerms: string;
+  viewUrl: string;
+}): Tmpl {
+  return {
+    subject: `${opts.kindLabel} inquiry: ${opts.summary}`,
+    html: layout(
+      `New ${opts.kindLabel.toLowerCase()} inquiry`,
+      `<p><strong>${opts.neederName}</strong> published a ${opts.kindLabel.toLowerCase()} inquiry matching your service profile:</p>
+       <p style="font-size:15px"><strong>${opts.summary}</strong></p>
+       <p>Baseline payment terms: <strong>${opts.paymentTerms}</strong> (you can propose alternative terms with your quote).</p>
+       <p style="margin:20px 0">${button(opts.viewUrl, 'View & quote')}</p>`,
+    ),
+    text: `${opts.neederName} published a ${opts.kindLabel} inquiry: ${opts.summary}. Baseline terms ${opts.paymentTerms}. Quote: ${opts.viewUrl}`,
+  };
+}
+
+export function serviceQuoteEmail(opts: {
+  providerName: string;
+  kindLabel: string;
+  summary: string;
+  total: string; // formatted ₹ total
+  viewUrl: string;
+}): Tmpl {
+  return {
+    subject: `Quote received: ₹${opts.total} — ${opts.summary}`,
+    html: layout(
+      'A provider quoted your inquiry',
+      `<p><strong>${opts.providerName}</strong> quoted your ${opts.kindLabel.toLowerCase()} inquiry (${opts.summary}).</p>
+       <p style="font-size:15px">Total cost: <strong>₹${opts.total}</strong></p>
+       <p style="margin:20px 0">${button(opts.viewUrl, 'Review quotes')}</p>`,
+    ),
+    text: `${opts.providerName} quoted ₹${opts.total} on your ${opts.kindLabel} inquiry (${opts.summary}). Review: ${opts.viewUrl}`,
+  };
+}
+
+export function serviceAcceptedEmail(opts: {
+  neederName: string;
+  kindLabel: string;
+  summary: string;
+  total: string;
+  viewUrl: string;
+}): Tmpl {
+  return {
+    subject: `Your quote was accepted — ${opts.summary}`,
+    html: layout(
+      'Quote accepted',
+      `<p><strong>${opts.neederName}</strong> accepted your quote for the ${opts.kindLabel.toLowerCase()} inquiry (${opts.summary}).</p>
+       <p style="font-size:15px">Agreed total: <strong>₹${opts.total}</strong></p>
+       <p>Both parties' full corporate identities and contacts are visible on the request — coordinate directly to execute.</p>
+       <p style="margin:20px 0">${button(opts.viewUrl, 'Open the request')}</p>`,
+    ),
+    text: `${opts.neederName} accepted your quote (₹${opts.total}) for: ${opts.summary}. Open: ${opts.viewUrl}`,
   };
 }
 

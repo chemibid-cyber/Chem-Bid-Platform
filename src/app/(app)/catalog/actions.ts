@@ -11,6 +11,7 @@ import { getActiveMode } from '@/lib/auth/mode';
 import { resolveCas } from '@/lib/cas/resolver';
 import { isValidCasFormat, type CasResolution } from '@/lib/cas/parse';
 import { recordAudit, AuditAction } from '@/lib/audit';
+import { retroMatchSalesItem } from '@/lib/targeting/run';
 import { ROLES } from '@/lib/catalog/constants';
 
 const GRADE_VALUES = ['pure', 'distilled', 'trade'] as const;
@@ -54,7 +55,7 @@ export async function createCatalogItemAction(
   _prev: CatalogFormState,
   formData: FormData,
 ): Promise<CatalogFormState> {
-  const { user } = await requireUser();
+  const { user, company } = await requireUser();
   const mode = getActiveMode(user);
   const profileType = profileForMode(mode);
 
@@ -132,6 +133,7 @@ export async function createCatalogItemAction(
     })
     .returning();
 
+  let matched = 0;
   if (created) {
     await recordAudit({
       actorUserId: user.id,
@@ -140,10 +142,30 @@ export async function createCatalogItemAction(
       action: AuditAction.CatalogItemCreated,
       snapshot: { casNumber, name: created.name, profileType, roles, grade: created.grade },
     });
+
+    // A new SALES item also qualifies the seller for auctions already live —
+    // pull those requests into their inbox right now (FR gap fix).
+    if (profileType === 'sales') {
+      const res = await retroMatchSalesItem({
+        itemId: created.id,
+        companyId: company.id,
+        companyGstin: company.gstin,
+        companySuspended: company.suspended,
+        ownerUserId: user.id,
+        ownerEmail: user.email,
+        casNumber: created.casNumber,
+        name: created.name,
+        isMixture: created.isMixture,
+        mixtureText: created.mixtureText,
+        grade: created.grade,
+        roles: created.roles,
+      });
+      matched = res.matched;
+    }
   }
 
   revalidatePath('/catalog');
-  redirect('/catalog');
+  redirect(matched > 0 ? `/catalog?matched=${matched}` : '/catalog');
 }
 
 export async function requestTransferAction(itemId: string): Promise<CatalogFormState> {

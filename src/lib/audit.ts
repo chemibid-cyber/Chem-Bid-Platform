@@ -34,6 +34,7 @@ export const AuditAction = {
   AuctionClosed: 'auction.closed',
   AuctionUnsuccessful: 'auction.unsuccessful',
   AuctionCloned: 'auction.cloned',
+  AuctionRetroMatched: 'auction.retro_matched',
   PartnerRegistered: 'partner.registered',
   PartnerDeclined: 'partner.declined',
   BidSubmitted: 'bid.submitted',
@@ -50,6 +51,12 @@ export const AuditAction = {
   DisputeResolved: 'dispute.resolved',
   Blocked: 'block.created',
   Reported: 'report.created',
+  ServiceProfileUpserted: 'service_profile.upserted',
+  ServiceRequestCreated: 'service_request.created',
+  ServiceRequestCancelled: 'service_request.cancelled',
+  ServiceQuoteSubmitted: 'service_quote.submitted',
+  ServiceQuoteWithdrawn: 'service_quote.withdrawn',
+  ServiceQuoteAccepted: 'service_quote.accepted',
 } as const;
 
 export type AuditActionType = (typeof AuditAction)[keyof typeof AuditAction];

@@ -25,7 +25,7 @@ function view(type: string, p: Payload): { title: string; href: string | null } 
     case 'auction.cancelled':
       return { title: `A requirement you engaged with was cancelled: "${s(p.name)}"`, href: `/requests/${auctionId}` };
     case 'auction.stage2':
-      return { title: `Counter-offer: ₹${s(p.rate)}/${unit} for "${s(p.name)}"`, href: `/requests/${auctionId}` };
+      return { title: `Counter-offer: ₹${s(p.rate)}/${unit} material rate for "${s(p.name)}"`, href: `/requests/${auctionId}` };
     case 'deal.won':
       return { title: `You won the deal for "${s(p.name)}"`, href: `/deals/${s(p.dealId)}` };
     case 'deal.confirmed':
@@ -34,6 +34,17 @@ function view(type: string, p: Payload): { title: string; href: string | null } 
       return { title: `${s(p.buyerName)} added you to their vendor network (CAS ${s(p.casNumber)})`, href: `/network` };
     case 'catalog.transfer_requested':
       return { title: `${s(p.requestedBy)} requested transfer of "${s(p.name)}"`, href: `/catalog` };
+    case 'service.inquiry':
+      return { title: `New service inquiry: ${s(p.summary)}`, href: `/services/${s(p.requestId)}` };
+    case 'service.quote':
+      return {
+        title: `${s(p.providerName)} quoted ₹${Number(p.total ?? 0).toLocaleString('en-IN')} — ${s(p.summary)}`,
+        href: `/services/${s(p.requestId)}`,
+      };
+    case 'service.accepted':
+      return { title: `Your quote was accepted: ${s(p.summary)}`, href: `/services/${s(p.requestId)}` };
+    case 'service.cancelled':
+      return { title: `Inquiry cancelled: ${s(p.summary)}`, href: `/services/${s(p.requestId)}` };
     default:
       return { title: type, href: null };
   }

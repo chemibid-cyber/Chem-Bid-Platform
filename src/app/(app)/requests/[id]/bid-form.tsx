@@ -14,6 +14,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 export interface BidInitial {
   basic: string | null;
   freight: string | null;
+  tax: string | null;
   paymentTerms: string | null;
   leadTimeDays: number | null;
   coaOnDispatch: boolean;
@@ -36,10 +37,12 @@ export function BidForm({
   const [state, action] = useFormState<BidFormState, FormData>(submitBidAction, null);
   const [basic, setBasic] = useState(initial.basic ?? '');
   const [freight, setFreight] = useState(initial.freight ?? '');
+  const [tax, setTax] = useState(initial.tax ?? '');
   const [coaOnDispatch, setCoaOnDispatch] = useState(initial.coaOnDispatch);
 
   const unitLabel = UNIT_LABEL[unit] ?? unit;
-  const total = Number(basic || 0) + (basis === 'exworks' ? 0 : Number(freight || 0));
+  const total =
+    Number(basic || 0) + (basis === 'exworks' ? 0 : Number(freight || 0)) + Number(tax || 0);
 
   return (
     <form action={action} className="space-y-5">
@@ -55,9 +58,9 @@ export function BidForm({
       ) : null}
       <input type="hidden" name="auctionId" value={auctionId} />
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-2">
-          <Label htmlFor="basic">Basic rate (₹/{unitLabel})</Label>
+          <Label htmlFor="basic">Material rate (₹/{unitLabel})</Label>
           <Input
             id="basic"
             name="basic"
@@ -71,7 +74,7 @@ export function BidForm({
         </div>
         {basis === 'delivered' ? (
           <div className="space-y-2">
-            <Label htmlFor="freight">Freight rate (₹/{unitLabel})</Label>
+            <Label htmlFor="freight">Transport (₹/{unitLabel})</Label>
             <Input
               id="freight"
               name="freight"
@@ -85,13 +88,26 @@ export function BidForm({
           </div>
         ) : (
           <div className="space-y-2">
-            <Label>Freight</Label>
+            <Label>Transport</Label>
             <p className="flex h-10 items-center text-sm text-muted-foreground">
-              Ex-Works — you don&apos;t quote freight (buyer arranges pickup).
+              Ex-Works — buyer arranges pickup.
             </p>
             <input type="hidden" name="freight" value="0" />
           </div>
         )}
+        <div className="space-y-2">
+          <Label htmlFor="tax">Tax (₹/{unitLabel})</Label>
+          <Input
+            id="tax"
+            name="tax"
+            type="number"
+            step="0.01"
+            min="0"
+            value={tax}
+            onChange={(e) => setTax(e.target.value)}
+            placeholder="0"
+          />
+        </div>
       </div>
 
       <div className="rounded-md border bg-muted/30 p-3 text-sm">
@@ -99,7 +115,9 @@ export function BidForm({
         <span className="text-base font-semibold">
           ₹{formatRate(total)}/{unitLabel}
         </span>{' '}
-        <span className="text-muted-foreground">(for the full quantity)</span>
+        <span className="text-muted-foreground">
+          = material + transport + tax · ranked on this full amount · for the full quantity
+        </span>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

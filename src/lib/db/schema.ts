@@ -66,6 +66,20 @@ export const blockScopeEnum = pgEnum('block_scope', ['this_cas', 'all']);
 export const dealStatusEnum = pgEnum('deal_status', ['confirmed', 'disputed']);
 export const disputeStatusEnum = pgEnum('dispute_status', ['open', 'resolved']);
 export const sellerGateEnum = pgEnum('seller_gate', ['notified', 'accepted', 'ignored', 'blocked']);
+// ── Service Providers Hub (open-identity transport + packing layer) ───────────
+export const serviceKindEnum = pgEnum('service_kind', ['transport', 'packing']);
+export const serviceRequestStatusEnum = pgEnum('service_request_status', [
+  'open',
+  'closed',
+  'cancelled',
+]);
+export const serviceQuoteStatusEnum = pgEnum('service_quote_status', [
+  'active',
+  'withdrawn',
+  'accepted',
+  'declined',
+]);
+export const packingConditionEnum = pgEnum('packing_condition', ['new', 'used', 'other']);
 
 // ── companies ────────────────────────────────────────────────────────────────
 export const companies = pgTable('companies', {
@@ -189,6 +203,7 @@ export const auctions = pgTable(
     stage: auctionStageEnum('stage').notNull().default('stage1'),
     closesAt: timestamp('closes_at', { withTimezone: true }).notNull(),
     extendedOnce: boolean('extended_once').notNull().default(false),
+    // The buyer's single Stage-2 counter, expressed on the MATERIAL (basic) rate.
     stage2Target: numeric('stage2_target'),
     stage2ClosesAt: timestamp('stage2_closes_at', { withTimezone: true }),
     stage2UrgencySent: boolean('stage2_urgency_sent').notNull().default(false),
@@ -229,13 +244,17 @@ export const bids = pgTable(
       .notNull()
       .references(() => users.id),
     gateState: sellerGateEnum('gate_state').notNull().default('notified'),
+    // Split pricing: total = material (basic) + freight + tax, all ₹/unit.
     stage1Basic: numeric('stage1_basic'),
     stage1Freight: numeric('stage1_freight'),
+    stage1Tax: numeric('stage1_tax'),
     stage1Total: numeric('stage1_total'),
     paymentTerms: paymentTermsEnum('payment_terms'),
     leadTimeDays: integer('lead_time_days'),
     coaFileUrl: text('coa_file_url'),
     coaOnDispatch: boolean('coa_on_dispatch').notNull().default(false),
+    // Stage-2 negotiates on the MATERIAL (basic) rate; freight + tax carry over
+    // from Stage-1. stage2_rate stores the seller's Stage-2 MATERIAL rate.
     stage2Rate: numeric('stage2_rate'),
     stage2Action: stage2ActionEnum('stage2_action'),
     status: bidStatusEnum('status').notNull().default('active'),
@@ -379,6 +398,100 @@ export const reports = pgTable('reports', {
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
 
+// ── Service Providers Hub (open identity — NO blind mechanics here) ───────────
+// A company opts in as a transporter and/or packing supplier; "Needers"
+// (buyers or sellers) post open-identity inquiries; matching providers quote.
+
+export const serviceProviderProfiles = pgTable('service_provider_profiles', {
+  id: uuid('id').primaryKey().defaultRandom(),
+  companyId: uuid('company_id')
+    .notNull()
+    .unique()
+    .references(() => companies.id),
+  contactUserId: uuid('contact_user_id')
+    .notNull()
+    .references(() => users.id),
+  isTransporter: boolean('is_transporter').notNull().default(false),
+  vehicleTypes: text('vehicle_types').array().notNull().default([]),
+  isPackingSupplier: boolean('is_packing_supplier').notNull().default(false),
+  packingTypes: text('packing_types').array().notNull().default([]),
+  active: boolean('active').notNull().default(true),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const serviceRequests = pgTable(
+  'service_requests',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    kind: serviceKindEnum('kind').notNull(),
+    neederCompanyId: uuid('needer_company_id')
+      .notNull()
+      .references(() => companies.id),
+    neederUserId: uuid('needer_user_id')
+      .notNull()
+      .references(() => users.id),
+    status: serviceRequestStatusEnum('status').notNull().default('open'),
+    // Baseline payment terms — a primary negotiation parameter (providers may counter in text).
+    paymentTerms: paymentTermsEnum('payment_terms').notNull(),
+    description: text('description'),
+    // — transport fields —
+    materialName: text('material_name'),
+    totalQtyKg: numeric('total_qty_kg'), // gross: chemical + packaging weight
+    lotQtyKg: numeric('lot_qty_kg'), // max per truck/tanker, gross
+    vehicleTypes: text('vehicle_types').array().notNull().default([]),
+    pickupAddress: text('pickup_address'),
+    dropAddress: text('drop_address'),
+    // — packing fields —
+    packingType: text('packing_type'),
+    condition: packingConditionEnum('condition'),
+    quantityPieces: integer('quantity_pieces'),
+    materialSpec: text('material_spec'),
+    weightPerPiece: text('weight_per_piece'),
+    logisticsBasis: logisticsBasisEnum('logistics_basis'),
+    acceptedQuoteId: uuid('accepted_quote_id'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    byNeeder: index('service_requests_needer_idx').on(t.neederCompanyId),
+    byStatusKind: index('service_requests_status_kind_idx').on(t.status, t.kind),
+  }),
+);
+
+export const serviceQuotes = pgTable(
+  'service_quotes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    requestId: uuid('request_id')
+      .notNull()
+      .references(() => serviceRequests.id),
+    providerCompanyId: uuid('provider_company_id')
+      .notNull()
+      .references(() => companies.id),
+    providerUserId: uuid('provider_user_id')
+      .notNull()
+      .references(() => users.id),
+    // Transport: ₹/kg. Packing: ₹/piece.
+    baseRate: numeric('base_rate').notNull(),
+    // Absolute tax in ₹ for the whole job (per spec), not per unit.
+    taxAmount: numeric('tax_amount').notNull().default('0'),
+    // Total Cost = base_rate × quantity + tax. Stored for audit/history.
+    total: numeric('total').notNull(),
+    // Null = accepts the needer's baseline payment terms.
+    altPaymentTerms: text('alt_payment_terms'),
+    note: text('note'),
+    status: serviceQuoteStatusEnum('status').notNull().default('active'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    // One quote per provider per request (they can revise it).
+    uniqProviderRequest: unique('uniq_provider_request').on(t.requestId, t.providerCompanyId),
+    byRequest: index('service_quotes_request_idx').on(t.requestId),
+    byProvider: index('service_quotes_provider_idx').on(t.providerCompanyId),
+  }),
+);
+
 // ── Inferred types ────────────────────────────────────────────────────────────
 export type Company = typeof companies.$inferSelect;
 export type NewCompany = typeof companies.$inferInsert;
@@ -400,3 +513,7 @@ export type Notification = typeof notifications.$inferSelect;
 export type AuditLogRow = typeof auditLog.$inferSelect;
 export type Dispute = typeof disputes.$inferSelect;
 export type Report = typeof reports.$inferSelect;
+export type ServiceProviderProfile = typeof serviceProviderProfiles.$inferSelect;
+export type ServiceRequest = typeof serviceRequests.$inferSelect;
+export type NewServiceRequest = typeof serviceRequests.$inferInsert;
+export type ServiceQuote = typeof serviceQuotes.$inferSelect;

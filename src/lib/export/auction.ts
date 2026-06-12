@@ -3,12 +3,14 @@ import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { db } from '@/lib/db';
 import { auctions, bids, companies } from '@/lib/db/schema';
 import { effectiveTotal } from '@/lib/ranking';
+import { stage2Total } from '@/lib/pricing';
 import { UNIT_LABEL, PAYMENT_TERMS_LABEL } from '@/lib/format';
 
 export interface ExportRow {
   seller: string;
   basic: string;
   freight: string;
+  tax: string;
   stage1Total: string;
   stage2Rate: string;
   effective: string;
@@ -43,6 +45,7 @@ export async function getAuctionExportData(
       seller: companies.legalName,
       basic: bids.stage1Basic,
       freight: bids.stage1Freight,
+      tax: bids.stage1Tax,
       stage1Total: bids.stage1Total,
       stage2Rate: bids.stage2Rate,
       paymentTerms: bids.paymentTerms,
@@ -67,11 +70,15 @@ export async function getAuctionExportData(
     .limit(1);
 
   const rows: ExportRow[] = visible.map((b) => {
-    const eff = effectiveTotal(Number(b.stage1Total), b.stage2Rate ? Number(b.stage2Rate) : null);
+    const eff = effectiveTotal(
+      Number(b.stage1Total),
+      b.stage2Rate ? stage2Total(Number(b.stage2Rate), b.freight, b.tax) : null,
+    );
     return {
       seller: b.seller,
       basic: b.basic ?? '',
       freight: b.freight ?? '0',
+      tax: b.tax ?? '0',
       stage1Total: b.stage1Total ?? '',
       stage2Rate: b.stage2Rate ?? '',
       effective: eff.toFixed(2),
@@ -100,10 +107,11 @@ function csvCell(s: string): string {
 export function toCsv(data: ExportData): string {
   const header = [
     'Seller',
-    `Basic (INR/${data.unit})`,
-    `Freight (INR/${data.unit})`,
+    `Material (INR/${data.unit})`,
+    `Transport (INR/${data.unit})`,
+    `Tax (INR/${data.unit})`,
     `Stage-1 total (INR/${data.unit})`,
-    `Stage-2 rate (INR/${data.unit})`,
+    `Stage-2 material (INR/${data.unit})`,
     `Effective (INR/${data.unit})`,
     'Payment terms',
     'Lead time (days)',
@@ -112,7 +120,7 @@ export function toCsv(data: ExportData): string {
   const lines = [header.map(csvCell).join(',')];
   for (const r of data.rows) {
     lines.push(
-      [r.seller, r.basic, r.freight, r.stage1Total, r.stage2Rate, r.effective, r.paymentTerms, r.leadTime, r.status]
+      [r.seller, r.basic, r.freight, r.tax, r.stage1Total, r.stage2Rate, r.effective, r.paymentTerms, r.leadTime, r.status]
         .map(csvCell)
         .join(','),
     );
@@ -153,7 +161,7 @@ export async function toPdf(data: ExportData): Promise<Uint8Array> {
   for (const r of data.rows) {
     line(`${r.seller}  [${r.status}]`, { bold: true, gap: 14 });
     line(
-      `  S1 total ${r.stage1Total}  |  S2 ${r.stage2Rate || '-'}  |  effective ${r.effective}  |  ${r.paymentTerms || '-'}  |  lead ${r.leadTime || '-'}d`,
+      `  S1 total ${r.stage1Total} (mat ${r.basic} + trans ${r.freight} + tax ${r.tax})  |  S2 mat ${r.stage2Rate || '-'}  |  effective ${r.effective}  |  ${r.paymentTerms || '-'}  |  lead ${r.leadTime || '-'}d`,
       { size: 9, gap: 18 },
     );
   }

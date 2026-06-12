@@ -182,7 +182,8 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
             <Stage2Respond
               auctionId={auction.id}
               targetRate={String(auction.stage2Target ?? '')}
-              stage1Total={String(bid.stage1Total)}
+              stage1Material={String(bid.stage1Basic ?? bid.stage1Total)}
+              addOn={Number(bid.stage1Freight ?? 0) + Number(bid.stage1Tax ?? 0)}
               unit={UNIT_LABEL[auction.unit] ?? auction.unit}
               existing={bid.stage2Action}
             />
@@ -234,6 +235,7 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
                 initial={{
                   basic: bid.stage1Basic,
                   freight: bid.stage1Freight,
+                  tax: bid.stage1Tax,
                   paymentTerms: bid.paymentTerms,
                   leadTimeDays: bid.leadTimeDays,
                   coaOnDispatch: bid.coaOnDispatch,

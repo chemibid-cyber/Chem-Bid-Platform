@@ -43,8 +43,14 @@ export async function sendEmail(input: SendEmailInput): Promise<{ ok: boolean; i
       text: input.text ?? stripHtml(input.html),
     });
     if (error) {
+      // Loud + structured so Vercel logs make the cause obvious (e.g. Resend
+      // test mode: onboarding@resend.dev only delivers to the account owner's
+      // inbox until a domain is verified).
       // eslint-disable-next-line no-console
-      console.error('[email] send failed:', error);
+      console.error(
+        `[email] send FAILED to=${Array.isArray(input.to) ? input.to.join(',') : input.to} subject="${input.subject}":`,
+        JSON.stringify(error),
+      );
       return { ok: false };
     }
     return { ok: true, id: data?.id };

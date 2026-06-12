@@ -33,12 +33,14 @@ const BUY_NAV: NavItem[] = [
   { href: '/auctions/new', label: 'New auction' },
   { href: '/network', label: 'Network' },
   { href: '/catalog', label: 'Catalog' },
+  { href: '/services', label: 'Services' },
 ];
 
 const SELL_NAV: NavItem[] = [
   { href: '/dashboard', label: 'Dashboard' },
   { href: '/requests', label: 'Requests' },
   { href: '/catalog', label: 'Catalog' },
+  { href: '/services', label: 'Services' },
 ];
 
 export function AppHeader({
