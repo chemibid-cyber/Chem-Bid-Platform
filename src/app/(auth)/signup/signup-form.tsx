@@ -16,6 +16,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 export function SignupForm() {
   const [state, action] = useFormState(signUpAction, null);
   const [gstin, setGstin] = useState('');
+  const [accountType, setAccountType] = useState<'trading' | 'provider'>('trading');
   const [preview, setPreview] = useState<GstPreview | null>(null);
   const [verifying, startVerify] = useTransition();
 
@@ -33,10 +34,55 @@ export function SignupForm() {
         <CardTitle className="text-xl">Create your company account</CardTitle>
         <CardDescription>
           Your identity is anchored to a verified GSTIN. The first person to register becomes the
-          Admin (can both buy and sell).
+          Admin.
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {/* Step 0 — what kind of company */}
+        <div className="mb-5 space-y-2">
+          <Label>What does your company do?</Label>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <label
+              className={`flex cursor-pointer flex-col gap-1 rounded-lg border p-3 text-sm transition-colors ${
+                accountType === 'trading' ? 'border-brand bg-brand/5' : 'hover:bg-muted/40'
+              }`}
+            >
+              <span className="flex items-center gap-2 font-medium">
+                <input
+                  type="radio"
+                  name="accountTypePick"
+                  checked={accountType === 'trading'}
+                  onChange={() => setAccountType('trading')}
+                  className="accent-primary"
+                />
+                We trade chemicals
+              </span>
+              <span className="text-muted-foreground">
+                Buy or sell chemicals through blind reverse auctions.
+              </span>
+            </label>
+            <label
+              className={`flex cursor-pointer flex-col gap-1 rounded-lg border p-3 text-sm transition-colors ${
+                accountType === 'provider' ? 'border-brand bg-brand/5' : 'hover:bg-muted/40'
+              }`}
+            >
+              <span className="flex items-center gap-2 font-medium">
+                <input
+                  type="radio"
+                  name="accountTypePick"
+                  checked={accountType === 'provider'}
+                  onChange={() => setAccountType('provider')}
+                  className="accent-primary"
+                />
+                We provide services
+              </span>
+              <span className="text-muted-foreground">
+                Transport (tankers, trucks) or packing material — quote on open-identity inquiries.
+              </span>
+            </label>
+          </div>
+        </div>
+
         {/* Step 1 — verify GSTIN */}
         <div className="space-y-2">
           <Label htmlFor="gstinInput">Company GSTIN</Label>
@@ -99,6 +145,7 @@ export function SignupForm() {
             </div>
 
             <input type="hidden" name="gstin" value={gstin} />
+            <input type="hidden" name="accountType" value={accountType} />
 
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2">

@@ -123,6 +123,8 @@ const transportSchema = z.object({
   lotQtyKg: z.string().optional(),
   pickupAddress: z.string().min(1, 'Pickup location is required.'),
   dropAddress: z.string().min(1, 'Drop location is required.'),
+  pickupPlaceId: z.string().optional(),
+  dropPlaceId: z.string().optional(),
   paymentTerms: z.enum(TERMS),
   description: z.string().optional(),
 });
@@ -155,6 +157,17 @@ export async function createTransportRequestAction(
     .filter((v) => VEHICLE_TYPE_VALUES.includes(v));
   if (vehicleTypes.length === 0) return { error: 'Select at least one vehicle type.' };
 
+  // Spec §3 hard block: when Google Places is configured, addresses must be
+  // PICKED from the suggestions (typed-only strings aren't routable).
+  if (process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY) {
+    if (!data.pickupPlaceId?.trim() || !data.dropPlaceId?.trim()) {
+      return {
+        error:
+          'Pick both the pickup and drop addresses from the Google suggestions — typed text alone can send trucks to un-routable destinations.',
+      };
+    }
+  }
+
   const [request] = await db
     .insert(serviceRequests)
     .values({
@@ -169,6 +182,8 @@ export async function createTransportRequestAction(
       vehicleTypes,
       pickupAddress: data.pickupAddress.trim(),
       dropAddress: data.dropAddress.trim(),
+      pickupPlaceId: data.pickupPlaceId?.trim() || null,
+      dropPlaceId: data.dropPlaceId?.trim() || null,
     })
     .returning();
   if (!request) return { error: 'Could not create the inquiry. Please try again.' };

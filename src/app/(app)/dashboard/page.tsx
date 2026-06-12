@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { and, eq, count, isNotNull, desc } from 'drizzle-orm';
 import {
   Plus,
@@ -86,6 +87,11 @@ function ActionCard({ href, label, desc, icon: Icon }: (typeof BUY_ACTIONS)[numb
 
 export default async function DashboardPage({ searchParams }: { searchParams: { error?: string } }) {
   const { user, company } = await requireUser();
+
+  // Pure service providers (no buy/sell capability) live in the Services hub —
+  // their dashboard IS the Active Requests Board.
+  if (!user.canBuy && !user.canSell) redirect('/services');
+
   const mode = getActiveMode(user);
   const isBuy = mode === 'buy';
 

@@ -7,6 +7,7 @@ import { serviceProviderProfiles, serviceRequests, serviceQuotes } from '@/lib/d
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { EmptyState, Hint } from '@/components/ui/help';
 import { cn } from '@/lib/utils';
 import { formatIST, PAYMENT_TERMS_LABEL } from '@/lib/format';
@@ -62,7 +63,9 @@ function RequestRow({ r, quoteCount }: { r: typeof serviceRequests.$inferSelect;
 }
 
 export default async function ServicesPage() {
-  const { company } = await requireUser();
+  const { user, company } = await requireUser();
+  // Pure service providers: this page IS their dashboard (Active Requests Board).
+  const providerOnly = !user.canBuy && !user.canSell;
 
   const [profile] = await db
     .select()
@@ -116,45 +119,62 @@ export default async function ServicesPage() {
         </Link>
       </div>
 
+      {providerOnly && !profile?.active ? (
+        <Alert variant="warning">
+          <AlertDescription>
+            One step left: pick the vehicle classes / packing types you serve so matching inquiries
+            reach you by email.{' '}
+            <Link href="/services/providers" className="font-medium underline">
+              Finish your provider profile
+            </Link>
+            .
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       <Hint>
         Unlike chemical auctions, service inquiries are fully open: the moment you publish, matching
         providers see your complete corporate profile — and the moment they quote, you see theirs.
         Speed over secrecy, because trucks and drums can&apos;t wait.
       </Hint>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Link href="/services/new/transport">
-          <Card className="h-full transition-shadow hover:shadow-md">
-            <CardContent className="flex h-full flex-col gap-2 py-5">
-              <div className="flex items-center justify-between">
-                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand/10 text-brand">
-                  <Truck className="h-5 w-5" />
-                </span>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <p className="font-semibold">Request transport</p>
-              <p className="text-sm text-muted-foreground">
-                Tankers, trucks, trailers or containers for a chemical movement.
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/services/new/packing">
-          <Card className="h-full transition-shadow hover:shadow-md">
-            <CardContent className="flex h-full flex-col gap-2 py-5">
-              <div className="flex items-center justify-between">
-                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand/10 text-brand">
-                  <Package2 className="h-5 w-5" />
-                </span>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <p className="font-semibold">Request packing material</p>
-              <p className="text-sm text-muted-foreground">
-                FIBC bags, drums, ISO tanks or carboys — new or used.
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
+      <div className={cn('grid gap-4', providerOnly ? 'sm:grid-cols-1' : 'sm:grid-cols-3')}>
+        {!providerOnly ? (
+          <>
+            <Link href="/services/new/transport">
+              <Card className="h-full transition-shadow hover:shadow-md">
+                <CardContent className="flex h-full flex-col gap-2 py-5">
+                  <div className="flex items-center justify-between">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                      <Truck className="h-5 w-5" />
+                    </span>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="font-semibold">Request transport</p>
+                  <p className="text-sm text-muted-foreground">
+                    Tankers, trucks, trailers or containers for a chemical movement.
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+            <Link href="/services/new/packing">
+              <Card className="h-full transition-shadow hover:shadow-md">
+                <CardContent className="flex h-full flex-col gap-2 py-5">
+                  <div className="flex items-center justify-between">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                      <Package2 className="h-5 w-5" />
+                    </span>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <p className="font-semibold">Request packing material</p>
+                  <p className="text-sm text-muted-foreground">
+                    FIBC bags, drums, ISO tanks or carboys — new or used.
+                  </p>
+                </CardContent>
+              </Card>
+            </Link>
+          </>
+        ) : null}
         <Link href="/services/providers">
           <Card className="h-full transition-shadow hover:shadow-md">
             <CardContent className="flex h-full flex-col gap-2 py-5">
@@ -198,26 +218,28 @@ export default async function ServicesPage() {
         </section>
       ) : null}
 
-      <section className="space-y-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-          My open inquiries ({mine.length})
-        </h2>
-        {mine.length === 0 ? (
-          <Card>
-            <EmptyState
-              icon={Truck}
-              title="No open inquiries"
-              description="Post a transport or packing request — matching providers get an instant email and quote with full identity on both sides."
-            />
-          </Card>
-        ) : (
-          <div className="grid gap-3">
-            {mine.map((r) => (
-              <RequestRow key={r.id} r={r} quoteCount={counts.get(r.id) ?? 0} />
-            ))}
-          </div>
-        )}
-      </section>
+      {!providerOnly ? (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            My open inquiries ({mine.length})
+          </h2>
+          {mine.length === 0 ? (
+            <Card>
+              <EmptyState
+                icon={Truck}
+                title="No open inquiries"
+                description="Post a transport or packing request — matching providers get an instant email and quote with full identity on both sides."
+              />
+            </Card>
+          ) : (
+            <div className="grid gap-3">
+              {mine.map((r) => (
+                <RequestRow key={r.id} r={r} quoteCount={counts.get(r.id) ?? 0} />
+              ))}
+            </div>
+          )}
+        </section>
+      ) : null}
     </div>
   );
 }

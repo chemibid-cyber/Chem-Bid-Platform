@@ -223,6 +223,16 @@ export default async function ServiceRequestPage({
                 <div className="sm:col-span-2">
                   <Detail label="Drop" value={request.dropAddress ?? ''} />
                 </div>
+                <div className="sm:col-span-2">
+                  <a
+                    href={`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(request.pickupAddress ?? '')}&destination=${encodeURIComponent(request.dropAddress ?? '')}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm font-medium text-brand underline-offset-4 hover:underline"
+                  >
+                    View route on Google Maps ↗
+                  </a>
+                </div>
               </>
             ) : (
               <>

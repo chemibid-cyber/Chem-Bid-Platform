@@ -9,7 +9,11 @@ import { ProviderProfileForm } from './provider-form';
 
 export const metadata = { title: 'Service provider profile' };
 
-export default async function ProvidersPage() {
+export default async function ProvidersPage({
+  searchParams,
+}: {
+  searchParams?: { welcome?: string };
+}) {
   const { user, company } = await requireUser();
 
   const [profile] = await db
@@ -23,6 +27,16 @@ export default async function ProvidersPage() {
       <Link href="/services" className="text-sm text-muted-foreground hover:text-foreground">
         ← Back to services
       </Link>
+
+      {searchParams?.welcome ? (
+        <Alert variant="success">
+          <AlertDescription>
+            Account created — {company.legalName} is registered{' '}
+            {company.verificationStatus === 'verified' ? 'and GST-verified' : '(GST verification pending)'}.
+            Pick what you serve below; matching inquiries reach you by email the moment they publish.
+          </AlertDescription>
+        </Alert>
+      ) : null}
       <Card>
         <CardHeader>
           <CardTitle>Service provider profile</CardTitle>

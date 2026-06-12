@@ -5,6 +5,7 @@ import { createTransportRequestAction, type ServiceFormState } from '../../actio
 import { VEHICLE_TYPES } from '@/lib/services/constants';
 import { PAYMENT_TERMS_LABEL } from '@/lib/format';
 import { SubmitButton } from '@/components/submit-button';
+import { PlacesInput } from '@/components/places-input';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -61,14 +62,20 @@ export function TransportRequestForm() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        <div className="space-y-2">
-          <Label htmlFor="pickupAddress">Pickup location</Label>
-          <Textarea id="pickupAddress" name="pickupAddress" required />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="dropAddress">Drop location</Label>
-          <Textarea id="dropAddress" name="dropAddress" required />
-        </div>
+        <PlacesInput
+          id="pickupAddress"
+          name="pickupAddress"
+          placeIdName="pickupPlaceId"
+          label="Pickup location"
+          required
+        />
+        <PlacesInput
+          id="dropAddress"
+          name="dropAddress"
+          placeIdName="dropPlaceId"
+          label="Drop location"
+          required
+        />
       </div>
 
       <div className="space-y-2">

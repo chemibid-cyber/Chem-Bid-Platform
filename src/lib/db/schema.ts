@@ -442,6 +442,10 @@ export const serviceRequests = pgTable(
     vehicleTypes: text('vehicle_types').array().notNull().default([]),
     pickupAddress: text('pickup_address'),
     dropAddress: text('drop_address'),
+    // Google Places anchors (spec §3): set when the address was picked from the
+    // Places autocomplete — guarantees routable, real locations.
+    pickupPlaceId: text('pickup_place_id'),
+    dropPlaceId: text('drop_place_id'),
     // — packing fields —
     packingType: text('packing_type'),
     condition: packingConditionEnum('condition'),

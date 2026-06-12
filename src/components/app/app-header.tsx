@@ -43,6 +43,11 @@ const SELL_NAV: NavItem[] = [
   { href: '/services', label: 'Services' },
 ];
 
+const PROVIDER_NAV: NavItem[] = [
+  { href: '/services', label: 'Services hub' },
+  { href: '/services/history', label: 'Service history' },
+];
+
 export function AppHeader({
   user,
   company,
@@ -54,7 +59,9 @@ export function AppHeader({
   mode: Mode;
   unreadCount?: number;
 }) {
-  const items = mode === 'buy' ? [...BUY_NAV] : [...SELL_NAV];
+  // Pure service providers get the provider workspace, not buy/sell nav.
+  const providerOnly = !user.canBuy && !user.canSell;
+  const items = providerOnly ? [...PROVIDER_NAV] : mode === 'buy' ? [...BUY_NAV] : [...SELL_NAV];
   if (user.isAdmin) items.push({ href: '/members', label: 'Members' });
 
   return (

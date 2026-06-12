@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { companies, users } from '@/lib/db/schema';
+import { companies, users, serviceProviderProfiles } from '@/lib/db/schema';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { getGstProvider, type GstVerificationResult } from '@/lib/gst';
@@ -57,6 +57,9 @@ export async function verifyGstinAction(gstinRaw: string): Promise<GstPreview> {
 
 const signupSchema = z.object({
   gstin: z.string().min(1),
+  // 'trading' = chemical buyer/seller; 'provider' = transport / packing vendor
+  // (Service Providers Hub spec §1 — same GST anchor, different workspace).
+  accountType: z.enum(['trading', 'provider']).default('trading'),
   firstName: z.string().min(1),
   lastName: z.string().min(1),
   email: z.string().email(),
@@ -135,6 +138,7 @@ export async function signUpAction(
       .returning();
     if (!company) throw new Error('company insert returned nothing');
 
+    const isProvider = data.accountType === 'provider';
     await db.insert(users).values({
       id: authId,
       companyId: company.id,
@@ -143,20 +147,35 @@ export async function signUpAction(
       email: data.email,
       phone: data.phone,
       designation: data.designation ?? null,
-      canBuy: true,
-      canSell: true,
+      // Service providers don't trade chemicals — their workspace is /services.
+      canBuy: !isProvider,
+      canSell: !isProvider,
       isAdmin: true,
       status: 'active',
       tncAcceptedAt: new Date(),
       dpdpConsentAt: new Date(),
     });
 
+    if (isProvider) {
+      // Inactive stub — first login lands them on the profile page to pick
+      // their vehicle classes / packing types and switch it on.
+      await db.insert(serviceProviderProfiles).values({
+        companyId: company.id,
+        contactUserId: authId,
+        isTransporter: false,
+        vehicleTypes: [],
+        isPackingSupplier: false,
+        packingTypes: [],
+        active: false,
+      });
+    }
+
     await recordAudit({
       actorUserId: authId,
       entityType: 'company',
       entityId: company.id,
       action: AuditAction.CompanyCreated,
-      snapshot: { gstin, verificationStatus, provider: getGstProvider().name },
+      snapshot: { gstin, verificationStatus, accountType: data.accountType, provider: getGstProvider().name },
     });
     await recordAudit({
       actorUserId: authId,
@@ -174,7 +193,7 @@ export async function signUpAction(
   // Establish the session cookie, then enter the app.
   const supabase = createClient();
   await supabase.auth.signInWithPassword({ email: data.email, password: data.password });
-  redirect('/dashboard');
+  redirect(data.accountType === 'provider' ? '/services/providers?welcome=1' : '/dashboard');
 }
 
 export async function logInAction(
