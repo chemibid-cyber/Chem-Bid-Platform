@@ -34,7 +34,22 @@ export const profileTypeEnum = pgEnum('profile_type', ['sales', 'purchase']);
 export const gradeEnum = pgEnum('grade', ['pure', 'distilled', 'trade']);
 export const casStatusEnum = pgEnum('cas_status', ['found', 'not_found', 'ambiguous']);
 export const unitEnum = pgEnum('unit', ['kg', 'mt', 'l']);
-export const logisticsBasisEnum = pgEnum('logistics_basis', ['delivered', 'exworks']);
+export const logisticsBasisEnum = pgEnum('logistics_basis', ['delivered', 'exworks', 'other']);
+// Buyer-stated freight handling (#24) — informational, shown to sellers.
+export const freightTermsEnum = pgEnum('freight_terms', [
+  'included',
+  'excluded',
+  'extra',
+  'buyer_pickup',
+  'seller_arranged',
+]);
+// Seller's structured counter-proposal lifecycle (#21).
+export const counterProposalStatusEnum = pgEnum('counter_proposal_status', [
+  'pending',
+  'accepted',
+  'rejected',
+  'withdrawn',
+]);
 export const privacyModeEnum = pgEnum('privacy_mode', ['all', 'registered']);
 export const auctionStatusEnum = pgEnum('auction_status', [
   'draft',
@@ -52,6 +67,12 @@ export const paymentTermsEnum = pgEnum('payment_terms', [
   'net30',
   'net45',
   'lc',
+  'immediate',
+  'net7',
+  'net60',
+  'net90',
+  'net120',
+  'other',
 ]);
 export const stage2ActionEnum = pgEnum('stage2_action', ['accept', 'reject', 'final']);
 export const bidStatusEnum = pgEnum('bid_status', [
@@ -201,6 +222,13 @@ export const auctions = pgTable(
     supplierFilter: text('supplier_filter').array().notNull().default([]),
     specFileUrl: text('spec_file_url'),
     remarks: text('remarks'),
+    // Buyer-specified commercial terms (shown to sellers; sellers may counter).
+    paymentTerms: paymentTermsEnum('payment_terms'),
+    paymentTermsCustom: text('payment_terms_custom'), // when paymentTerms = 'other'
+    deliveryTermsCustom: text('delivery_terms_custom'), // when logisticsBasis = 'other' (#14)
+    freightTerms: freightTermsEnum('freight_terms'), // #24
+    offerValidUntil: timestamp('offer_valid_until', { withTimezone: true }), // #22
+    supplyValidUntil: timestamp('supply_valid_until', { withTimezone: true }), // #22
     privacyMode: privacyModeEnum('privacy_mode').notNull().default('all'),
     blind: boolean('blind').notNull().default(true),
     status: auctionStatusEnum('status').notNull().default('draft'),
@@ -251,7 +279,8 @@ export const bids = pgTable(
     // Split pricing: total = material (basic) + freight + tax, all ₹/unit.
     stage1Basic: numeric('stage1_basic'),
     stage1Freight: numeric('stage1_freight'),
-    stage1Tax: numeric('stage1_tax'),
+    stage1Tax: numeric('stage1_tax'), // absolute ₹/unit (computed)
+    stage1TaxPct: numeric('stage1_tax_pct'), // tax % entered by seller (#19); stage1Tax is derived from it
     stage1Total: numeric('stage1_total'),
     paymentTerms: paymentTermsEnum('payment_terms'),
     leadTimeDays: integer('lead_time_days'),
@@ -309,8 +338,45 @@ export const blocks = pgTable('blocks', {
     .references(() => companies.id),
   casNumber: text('cas_number'), // null = all
   scope: blockScopeEnum('scope').notNull().default('this_cas'),
+  expiresAt: timestamp('expires_at', { withTimezone: true }), // null = permanent (#16)
   createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
 });
+
+// ── counter_proposals (seller proposes modified terms; buyer approves/rejects) ──
+// #21 — NOT a partial bid: the seller still bids the full quantity. This proposes a
+// revised SPEC (qty/packing/delivery/validity) that the buyer must accept before it
+// takes effect. Single-winner + full-quantity rules are preserved.
+export const counterProposals = pgTable(
+  'counter_proposals',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    auctionId: uuid('auction_id')
+      .notNull()
+      .references(() => auctions.id),
+    bidId: uuid('bid_id')
+      .notNull()
+      .references(() => bids.id),
+    sellerCompanyId: uuid('seller_company_id')
+      .notNull()
+      .references(() => companies.id),
+    proposedQuantity: numeric('proposed_quantity'),
+    proposedUnit: unitEnum('proposed_unit'),
+    proposedPacking: text('proposed_packing'),
+    proposedLogisticsBasis: logisticsBasisEnum('proposed_logistics_basis'),
+    proposedDeliveryAddress: text('proposed_delivery_address'),
+    proposedOfferValidUntil: timestamp('proposed_offer_valid_until', { withTimezone: true }),
+    proposedSupplyValidUntil: timestamp('proposed_supply_valid_until', { withTimezone: true }),
+    note: text('note'),
+    status: counterProposalStatusEnum('status').notNull().default('pending'),
+    buyerResponseNote: text('buyer_response_note'),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    respondedAt: timestamp('responded_at', { withTimezone: true }),
+  },
+  (t) => ({
+    byAuction: index('counter_proposals_auction_idx').on(t.auctionId),
+    bySeller: index('counter_proposals_seller_idx').on(t.sellerCompanyId),
+  }),
+);
 
 // ── deals (Deal Confirmation Record — NOT "legally binding") ───────────────────
 export const deals = pgTable('deals', {
@@ -546,6 +612,8 @@ export type Bid = typeof bids.$inferSelect;
 export type NewBid = typeof bids.$inferInsert;
 export type ProactiveShare = typeof proactiveShares.$inferSelect;
 export type Block = typeof blocks.$inferSelect;
+export type CounterProposal = typeof counterProposals.$inferSelect;
+export type NewCounterProposal = typeof counterProposals.$inferInsert;
 export type Deal = typeof deals.$inferSelect;
 export type Notification = typeof notifications.$inferSelect;
 export type AuditLogRow = typeof auditLog.$inferSelect;

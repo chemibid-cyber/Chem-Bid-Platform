@@ -2,13 +2,15 @@
 
 import { z } from 'zod';
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import { and, eq, isNotNull } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { auctions, bids, blocks } from '@/lib/db/schema';
+import { auctions, bids, blocks, counterProposals, notifications } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/session';
-import { computeTotalRate, validateBidPricing, isValidStage2Rate } from '@/lib/pricing';
+import { computeTaxFromPct, computeTotalRate, validateBidPricing, isValidStage2Rate } from '@/lib/pricing';
 import { rankOf } from '@/lib/ranking';
 import { uploadFile, signedUrl } from '@/lib/storage';
+import { istLocalToDate } from '@/lib/format';
 import { recordAudit, AuditAction } from '@/lib/audit';
 
 export type BidFormState = { error?: string; success?: string } | null;
@@ -55,7 +57,11 @@ export async function ignoreRequestAction(auctionId: string): Promise<BidFormSta
     action: AuditAction.SellerIgnored,
   });
   revalidatePath('/requests');
-  return { success: 'Moved to Ignored.' };
+  // Leave the (now-ignored) detail page — the seller belongs back on their
+  // requests list, not stranded on a page they just dismissed. redirect()
+  // throws a NEXT_REDIRECT control-flow signal, so it must be the last call
+  // and must NOT be swallowed by a try/catch. (#15)
+  redirect('/requests');
 }
 
 export async function unignoreRequestAction(auctionId: string): Promise<BidFormState> {
@@ -78,19 +84,34 @@ export async function unignoreRequestAction(auctionId: string): Promise<BidFormS
   return { success: 'Restored to your active requests.' };
 }
 
+/** Add N calendar months to `from`, returning a new Date (mutation-free). */
+function addMonths(from: Date, months: number): Date {
+  const d = new Date(from);
+  d.setMonth(d.getMonth() + months);
+  return d;
+}
+
 export async function blockPurchaserAction(
   auctionId: string,
   scope: 'this_cas' | 'all',
+  durationMonths: number | null,
 ): Promise<BidFormState> {
   const { user, company } = await requireUser();
   const [auction] = await db.select().from(auctions).where(eq(auctions.id, auctionId)).limit(1);
   if (!auction) return { error: 'Auction not found.' };
+
+  // null durationMonths = permanent block; a positive count expires N months out. (#16)
+  const expiresAt =
+    durationMonths && Number.isFinite(durationMonths) && durationMonths > 0
+      ? addMonths(new Date(), durationMonths)
+      : null;
 
   await db.insert(blocks).values({
     blockerCompanyId: company.id,
     blockedCompanyId: auction.buyerCompanyId,
     casNumber: scope === 'this_cas' ? auction.casNumber : null,
     scope,
+    expiresAt,
   });
 
   const bid = await loadSellerBid(auctionId, company.id);
@@ -102,18 +123,39 @@ export async function blockPurchaserAction(
     entityType: 'company',
     entityId: auction.buyerCompanyId,
     action: AuditAction.Blocked,
-    snapshot: { scope, casNumber: scope === 'this_cas' ? auction.casNumber : null },
+    snapshot: {
+      scope,
+      casNumber: scope === 'this_cas' ? auction.casNumber : null,
+      durationMonths: durationMonths ?? null,
+      expiresAt: expiresAt ? expiresAt.toISOString() : null,
+    },
   });
   revalidatePath('/requests');
-  return { success: scope === 'all' ? 'Purchaser blocked for all requests.' : 'Purchaser blocked for this CAS.' };
+  const scopeMsg = scope === 'all' ? 'all requests' : 'this CAS';
+  const durMsg = expiresAt ? `${durationMonths} month${durationMonths === 1 ? '' : 's'}` : 'permanently';
+  return { success: `Purchaser blocked for ${scopeMsg} (${durMsg}).` };
 }
 
 const bidSchema = z.object({
   auctionId: z.string().uuid(),
   basic: z.string().min(1),
   freight: z.string().optional(),
-  tax: z.string().optional(),
-  paymentTerms: z.enum(['advance', 'net15', 'net30', 'net45', 'lc']),
+  // #19: seller enters a tax PERCENTAGE (optional, >= 0); the absolute ₹/unit
+  // amount is computed server-side from it.
+  taxPct: z.string().optional(),
+  // #18: full payment-terms set MINUS 'other' (a bid has no custom-terms field).
+  paymentTerms: z.enum([
+    'advance',
+    'immediate',
+    'net7',
+    'net15',
+    'net30',
+    'net45',
+    'net60',
+    'net90',
+    'net120',
+    'lc',
+  ]),
   leadTimeDays: z.string().optional(),
   coaOnDispatch: z.string().optional(),
 });
@@ -136,10 +178,14 @@ export async function submitBidAction(_prev: BidFormState, formData: FormData): 
 
   const basic = Number(data.basic);
   const freightInput = Number(data.freight ?? '0');
-  const tax = Number(data.tax?.trim() ? data.tax : '0');
   const basis = auction.logisticsBasis;
+  // #19: tax arrives as a percentage; derive the per-unit ₹ amount from
+  // material + effective freight. Negatives clamp to 0 inside the helper.
+  const taxPct = Number(data.taxPct?.trim() ? data.taxPct : '0');
+  const tax = computeTaxFromPct(taxPct, basic, freightInput, basis);
   const pricing = validateBidPricing({ basic, freight: freightInput, tax, basis });
   if (!pricing.ok) return { error: pricing.errors.join(' ') };
+  if (!Number.isFinite(taxPct) || taxPct < 0) return { error: 'Tax % cannot be negative.' };
 
   const effFreight = basis === 'exworks' ? 0 : freightInput;
   const total = computeTotalRate({ basic, freight: freightInput, tax, basis });
@@ -164,7 +210,8 @@ export async function submitBidAction(_prev: BidFormState, formData: FormData): 
     .set({
       stage1Basic: String(basic),
       stage1Freight: String(effFreight),
-      stage1Tax: String(Math.max(0, tax)),
+      stage1Tax: String(Math.max(0, tax)), // computed absolute ₹/unit
+      stage1TaxPct: String(Math.max(0, taxPct)), // the % the seller entered (#19)
       stage1Total: String(total),
       paymentTerms: data.paymentTerms,
       leadTimeDays: data.leadTimeDays ? Number(data.leadTimeDays) : null,
@@ -184,7 +231,7 @@ export async function submitBidAction(_prev: BidFormState, formData: FormData): 
     entityType: 'bid',
     entityId: bid.id,
     action: isRevision ? AuditAction.BidRevised : AuditAction.BidSubmitted,
-    snapshot: { total, basic, freight: effFreight, tax, paymentTerms: data.paymentTerms },
+    snapshot: { total, basic, freight: effFreight, tax, taxPct, paymentTerms: data.paymentTerms },
   });
   revalidatePath(`/requests/${data.auctionId}`);
   return { success: isRevision ? 'Bid revised.' : 'Bid submitted.' };
@@ -310,4 +357,157 @@ export async function stage2RespondAction(
           ? 'Final rate submitted.'
           : 'You rejected the counter — your Stage-1 bid stands.',
   };
+}
+
+// ── Seller structured counter-proposal (#21) ──────────────────────────────────
+// NOT a partial bid: the seller still bids the FULL quantity and the leaderboard
+// ranking is untouched. This proposes a REVISED SPEC (qty / packing / delivery /
+// validity) the buyer may approve. On accept the auction's base spec is NOT
+// rewritten — the accepted terms are recorded as the agreed modification for THIS
+// seller only, shown to both parties. Each seller has at most ONE pending
+// proposal per auction at a time (re-proposing after a reject is allowed).
+
+const counterProposalSchema = z.object({
+  auctionId: z.string().uuid(),
+  proposedQuantity: z.string().optional(),
+  proposedUnit: z.enum(['kg', 'mt', 'l']).optional().or(z.literal('')),
+  proposedPacking: z.string().optional(),
+  proposedLogisticsBasis: z.enum(['delivered', 'exworks', 'other']).optional().or(z.literal('')),
+  proposedDeliveryAddress: z.string().optional(),
+  proposedOfferValidUntil: z.string().optional(),
+  proposedSupplyValidUntil: z.string().optional(),
+  note: z.string().optional(),
+});
+
+export async function counterProposeAction(
+  _prev: BidFormState,
+  formData: FormData,
+): Promise<BidFormState> {
+  const { user, company } = await requireUser();
+  if (!user.canSell && !user.isAdmin) return { error: 'You need sell capability to propose changes.' };
+
+  const parsed = counterProposalSchema.safeParse(Object.fromEntries(formData));
+  if (!parsed.success) return { error: 'Please check the proposal form.' };
+  const data = parsed.data;
+
+  const [auction] = await db.select().from(auctions).where(eq(auctions.id, data.auctionId)).limit(1);
+  if (!auction) return { error: 'Auction not found.' };
+  if (auction.status !== 'active') return { error: 'This auction is no longer open.' };
+
+  const bid = await loadSellerBid(data.auctionId, company.id);
+  if (!bid) return { error: 'You were not invited to this requirement.' };
+  if (bid.gateState !== 'accepted') return { error: 'Accept the requirement before proposing changes.' };
+
+  // Validity dates (optional) — if set, must be in the future and well-formed.
+  const now = Date.now();
+  let proposedOfferValidUntil: Date | null = null;
+  if (data.proposedOfferValidUntil) {
+    const d = istLocalToDate(data.proposedOfferValidUntil);
+    if (Number.isNaN(d.getTime())) return { error: 'Offer validity date is invalid.' };
+    if (d.getTime() <= now) return { error: 'Offer validity must be in the future.' };
+    proposedOfferValidUntil = d;
+  }
+  let proposedSupplyValidUntil: Date | null = null;
+  if (data.proposedSupplyValidUntil) {
+    const d = istLocalToDate(data.proposedSupplyValidUntil);
+    if (Number.isNaN(d.getTime())) return { error: 'Supply validity date is invalid.' };
+    if (d.getTime() <= now) return { error: 'Supply validity must be in the future.' };
+    proposedSupplyValidUntil = d;
+  }
+
+  // Quantity (optional) — if provided, must be a positive number.
+  let proposedQuantity: string | null = null;
+  if (data.proposedQuantity?.trim()) {
+    const q = Number(data.proposedQuantity);
+    if (!Number.isFinite(q) || q <= 0) return { error: 'Proposed quantity must be greater than 0.' };
+    proposedQuantity = String(q);
+  }
+
+  const values = {
+    proposedQuantity,
+    proposedUnit: data.proposedUnit ? data.proposedUnit : null,
+    proposedPacking: data.proposedPacking?.trim() || null,
+    proposedLogisticsBasis: data.proposedLogisticsBasis ? data.proposedLogisticsBasis : null,
+    proposedDeliveryAddress: data.proposedDeliveryAddress?.trim() || null,
+    proposedOfferValidUntil,
+    proposedSupplyValidUntil,
+    note: data.note?.trim() || null,
+  };
+
+  // At most one PENDING proposal per auction per seller — update it if it exists.
+  const [existing] = await db
+    .select()
+    .from(counterProposals)
+    .where(
+      and(
+        eq(counterProposals.auctionId, data.auctionId),
+        eq(counterProposals.sellerCompanyId, company.id),
+        eq(counterProposals.status, 'pending'),
+      ),
+    )
+    .limit(1);
+
+  let proposalId: string;
+  if (existing) {
+    await db
+      .update(counterProposals)
+      .set({ ...values, createdAt: new Date() })
+      .where(eq(counterProposals.id, existing.id));
+    proposalId = existing.id;
+  } else {
+    const [created] = await db
+      .insert(counterProposals)
+      .values({
+        auctionId: data.auctionId,
+        bidId: bid.id,
+        sellerCompanyId: company.id,
+        ...values,
+      })
+      .returning({ id: counterProposals.id });
+    if (!created) return { error: 'Could not submit the proposal. Please try again.' };
+    proposalId = created.id;
+  }
+
+  await recordAudit({
+    actorUserId: user.id,
+    entityType: 'counter_proposal',
+    entityId: proposalId,
+    action: AuditAction.CounterProposed,
+    snapshot: { auctionId: data.auctionId, bidId: bid.id, ...values },
+  });
+
+  // Notify the buyer (the auction owner) in-app.
+  await db.insert(notifications).values({
+    userId: auction.buyerUserId,
+    type: 'counter_proposal.received',
+    payload: { auctionId: data.auctionId, proposalId, name: auction.name },
+  });
+
+  revalidatePath(`/requests/${data.auctionId}`);
+  return { success: existing ? 'Proposal updated.' : 'Proposal sent to the buyer.' };
+}
+
+export async function withdrawCounterProposalAction(proposalId: string): Promise<BidFormState> {
+  const { user, company } = await requireUser();
+  const [proposal] = await db
+    .select()
+    .from(counterProposals)
+    .where(eq(counterProposals.id, proposalId))
+    .limit(1);
+  if (!proposal || proposal.sellerCompanyId !== company.id) return { error: 'Proposal not found.' };
+  if (proposal.status !== 'pending') return { error: 'Only a pending proposal can be withdrawn.' };
+
+  await db
+    .update(counterProposals)
+    .set({ status: 'withdrawn', respondedAt: new Date() })
+    .where(eq(counterProposals.id, proposalId));
+  await recordAudit({
+    actorUserId: user.id,
+    entityType: 'counter_proposal',
+    entityId: proposalId,
+    action: AuditAction.CounterProposed,
+    snapshot: { withdrawn: true, auctionId: proposal.auctionId },
+  });
+  revalidatePath(`/requests/${proposal.auctionId}`);
+  return { success: 'Proposal withdrawn.' };
 }

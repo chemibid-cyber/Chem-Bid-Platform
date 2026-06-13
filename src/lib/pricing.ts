@@ -11,7 +11,7 @@
  *    Stage-1. Price-drop lock: a Stage-2 material rate may never exceed the
  *    seller's Stage-1 material rate (negotiation only moves the price DOWN).
  */
-export type LogisticsBasis = 'delivered' | 'exworks';
+export type LogisticsBasis = 'delivered' | 'exworks' | 'other';
 
 export function round2(n: number): number {
   return Math.round((n + Number.EPSILON) * 100) / 100;
@@ -20,6 +20,23 @@ export function round2(n: number): number {
 /** Freight is meaningless under Ex-Works (buyer arranges pickup) → forced to 0. */
 export function effectiveFreight(freight: number, basis: LogisticsBasis): number {
   return basis === 'exworks' ? 0 : Math.max(0, freight);
+}
+
+/**
+ * Tax entered as a PERCENTAGE (#19), auto-converted to a per-unit ₹ amount.
+ * Base = material + effective freight (freight is 0 under Ex-Works), so the
+ * tax tracks the taxable value the seller is actually quoting. Negative inputs
+ * (rate or %) clamp to 0; the result is rounded to 2 decimals (₹/unit).
+ */
+export function computeTaxFromPct(
+  taxPct: number,
+  basic: number,
+  freight: number,
+  basis: LogisticsBasis,
+): number {
+  const pct = Number.isFinite(taxPct) ? Math.max(0, taxPct) : 0;
+  const base = Math.max(0, basic) + effectiveFreight(freight, basis);
+  return round2((pct / 100) * base);
 }
 
 export interface BidPricingInput {
@@ -44,9 +61,11 @@ export function validateBidPricing({ basic, freight, tax = 0, basis }: BidPricin
   if (!Number.isFinite(basic) || basic <= 0) {
     errors.push('Material rate must be greater than 0.');
   }
-  if (basis === 'delivered') {
-    if (!Number.isFinite(freight) || freight <= 0) {
-      errors.push('Transport (freight) rate is required for a Delivered auction.');
+  // Freight may be 0 (e.g. included in the material rate). Only Ex-Works hides it
+  // entirely; for Delivered / Other the seller may enter any non-negative amount.
+  if (basis !== 'exworks') {
+    if (!Number.isFinite(freight) || freight < 0) {
+      errors.push('Transport (freight) cannot be negative (enter 0 if it is included or not applicable).');
     }
   }
   if (!Number.isFinite(tax) || tax < 0) {

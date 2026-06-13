@@ -14,6 +14,7 @@ import {
   companies,
   deals,
   blocks,
+  counterProposals,
 } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/session';
 import { isValidCasFormat } from '@/lib/cas/parse';
@@ -32,6 +33,27 @@ export type AuctionFormState = { error?: string; success?: string } | null;
 
 const ROLE_VALUES = ['mfr', 'dist', 'trader'];
 
+const PAYMENT_TERMS_VALUES = [
+  'advance',
+  'immediate',
+  'net7',
+  'net15',
+  'net30',
+  'net45',
+  'net60',
+  'net90',
+  'net120',
+  'lc',
+  'other',
+] as const;
+const FREIGHT_TERMS_VALUES = [
+  'included',
+  'excluded',
+  'extra',
+  'buyer_pickup',
+  'seller_arranged',
+] as const;
+
 const schema = z.object({
   casNumber: z.string().optional(),
   name: z.string().min(1, 'Product name is required.'),
@@ -42,7 +64,15 @@ const schema = z.object({
   minPurity: z.string().optional(),
   packing: z.string().optional(),
   deliveryAddress: z.string().min(1, 'Delivery address is required.'),
-  logisticsBasis: z.enum(['delivered', 'exworks']),
+  logisticsBasis: z.enum(['delivered', 'exworks', 'other']),
+  deliveryTermsCustom: z.string().optional(),
+  paymentTerms: z.enum(PAYMENT_TERMS_VALUES, {
+    errorMap: () => ({ message: 'Select the payment terms for this requirement.' }),
+  }),
+  paymentTermsCustom: z.string().optional(),
+  freightTerms: z.enum(FREIGHT_TERMS_VALUES).optional().or(z.literal('')),
+  offerValidUntil: z.string().optional(),
+  supplyValidUntil: z.string().optional(),
   remarks: z.string().optional(),
   closesAt: z.string().min(1),
   privacyMode: z.enum(['all', 'registered']),
@@ -85,6 +115,40 @@ export async function createAuctionAction(
   const closesAt = istLocalToDate(data.closesAt);
   const timing = validateClosingTime(closesAt);
   if (!timing.ok) return { error: timing.error };
+
+  // #18 — payment terms required; capture free text only when "other".
+  const paymentTermsCustom =
+    data.paymentTerms === 'other' ? (data.paymentTermsCustom?.trim() ?? '') : '';
+  if (data.paymentTerms === 'other' && !paymentTermsCustom) {
+    return { error: 'Describe your custom payment terms.' };
+  }
+
+  // #14 — "Other" delivery basis needs a free-text description; behaves like Delivered.
+  const deliveryTermsCustom =
+    data.logisticsBasis === 'other' ? (data.deliveryTermsCustom?.trim() ?? '') : '';
+  if (data.logisticsBasis === 'other' && !deliveryTermsCustom) {
+    return { error: 'Describe your custom delivery terms.' };
+  }
+
+  // #24 — freight handling is optional/informational.
+  const freightTerms = data.freightTerms ? data.freightTerms : null;
+
+  // #22 — optional offer/supply validity windows; if set they must be in the future.
+  const now = Date.now();
+  let offerValidUntil: Date | null = null;
+  if (data.offerValidUntil) {
+    const d = istLocalToDate(data.offerValidUntil);
+    if (Number.isNaN(d.getTime())) return { error: 'Offer validity date is invalid.' };
+    if (d.getTime() <= now) return { error: 'Offer validity must be in the future.' };
+    offerValidUntil = d;
+  }
+  let supplyValidUntil: Date | null = null;
+  if (data.supplyValidUntil) {
+    const d = istLocalToDate(data.supplyValidUntil);
+    if (Number.isNaN(d.getTime())) return { error: 'Supply validity date is invalid.' };
+    if (d.getTime() <= now) return { error: 'Supply validity must be in the future.' };
+    supplyValidUntil = d;
+  }
 
   const supplierFilter = formData.getAll('supplierFilter').map(String).filter((r) => ROLE_VALUES.includes(r));
 
@@ -130,6 +194,12 @@ export async function createAuctionAction(
       packing: data.packing?.trim() || null,
       deliveryAddress: data.deliveryAddress.trim(),
       logisticsBasis: data.logisticsBasis,
+      deliveryTermsCustom: deliveryTermsCustom || null,
+      paymentTerms: data.paymentTerms,
+      paymentTermsCustom: paymentTermsCustom || null,
+      freightTerms,
+      offerValidUntil,
+      supplyValidUntil,
       supplierFilter,
       specFileUrl,
       remarks: data.remarks?.trim() || null,
@@ -465,8 +535,17 @@ export async function confirmDealAction(
   redirect(`/auctions/${auctionId}/review?confirmed=1`);
 }
 
-/** Buyer blocks a seller for THIS CAS (permanent mute; historical bids retained). */
-export async function blockSellerAction(auctionId: string, sellerCompanyId: string): Promise<AuctionFormState> {
+/**
+ * Buyer blocks a seller (#16). The buyer chooses scope (this CAS only / all
+ * products) and duration (1/3/6 months, or permanent). Historical bids are
+ * always retained — a block is a forward-looking mute, never a deletion.
+ */
+export async function blockSellerAction(
+  auctionId: string,
+  sellerCompanyId: string,
+  scope: 'this_cas' | 'all',
+  durationMonths: number | null,
+): Promise<AuctionFormState> {
   const { user, company } = await requireUser();
   const [auction] = await db
     .select()
@@ -475,19 +554,113 @@ export async function blockSellerAction(auctionId: string, sellerCompanyId: stri
     .limit(1);
   if (!auction) return { error: 'Auction not found.' };
 
+  if (scope !== 'this_cas' && scope !== 'all') return { error: 'Invalid block scope.' };
+  if (durationMonths != null && (!Number.isInteger(durationMonths) || durationMonths <= 0)) {
+    return { error: 'Invalid block duration.' };
+  }
+
+  // 'all' clears the CAS scope; 'this_cas' anchors to the auction's chemical.
+  const casNumber = scope === 'this_cas' ? auction.casNumber : null;
+  // null duration = permanent; otherwise N months from now.
+  let expiresAt: Date | null = null;
+  if (durationMonths != null) {
+    const d = new Date();
+    d.setMonth(d.getMonth() + durationMonths);
+    expiresAt = d;
+  }
+
   await db.insert(blocks).values({
     blockerCompanyId: company.id,
     blockedCompanyId: sellerCompanyId,
-    casNumber: auction.casNumber,
-    scope: 'this_cas',
+    casNumber,
+    scope,
+    expiresAt,
   });
   await recordAudit({
     actorUserId: user.id,
     entityType: 'company',
     entityId: sellerCompanyId,
     action: AuditAction.Blocked,
-    snapshot: { casNumber: auction.casNumber, scope: 'this_cas', context: 'buyer_blocks_seller' },
+    snapshot: {
+      casNumber,
+      scope,
+      durationMonths,
+      expiresAt: expiresAt?.toISOString() ?? null,
+      context: 'buyer_blocks_seller',
+    },
   });
   revalidatePath(`/auctions/${auctionId}/review`);
-  return { success: 'Seller blocked for this CAS.' };
+  return {
+    success:
+      scope === 'all'
+        ? `Seller blocked across all products${expiresAt ? ` until ${expiresAt.toDateString()}` : ' permanently'}.`
+        : `Seller blocked for this CAS${expiresAt ? ` until ${expiresAt.toDateString()}` : ' permanently'}.`,
+  };
+}
+
+/**
+ * Buyer responds to a seller's structured counter-proposal (#21).
+ * Accept simply records status='accepted' — it does NOT rewrite the auction's
+ * base spec (that would unfairly change the requirement for other sellers and
+ * the leaderboard). The accepted terms become the agreed modification for THAT
+ * seller, shown to both parties. Reject records status='rejected' + an optional
+ * note. Full-quantity / single-winner / ranking are entirely unaffected.
+ */
+export async function respondToCounterProposalAction(
+  proposalId: string,
+  decision: 'accepted' | 'rejected',
+  responseNote?: string,
+): Promise<AuctionFormState> {
+  const { user, company } = await requireUser();
+  if (decision !== 'accepted' && decision !== 'rejected') return { error: 'Invalid decision.' };
+
+  // Authz: the proposal's auction must be owned by the current company.
+  const [row] = await db
+    .select({
+      proposal: counterProposals,
+      auctionName: auctions.name,
+      buyerCompanyId: auctions.buyerCompanyId,
+    })
+    .from(counterProposals)
+    .innerJoin(auctions, eq(counterProposals.auctionId, auctions.id))
+    .where(eq(counterProposals.id, proposalId))
+    .limit(1);
+  if (!row || row.buyerCompanyId !== company.id) return { error: 'Proposal not found.' };
+  if (row.proposal.status !== 'pending') return { error: 'This proposal has already been answered.' };
+
+  const note = responseNote?.trim() || null;
+  await db
+    .update(counterProposals)
+    .set({ status: decision, buyerResponseNote: note, respondedAt: new Date() })
+    .where(eq(counterProposals.id, proposalId));
+
+  await recordAudit({
+    actorUserId: user.id,
+    entityType: 'counter_proposal',
+    entityId: proposalId,
+    action: decision === 'accepted' ? AuditAction.CounterAccepted : AuditAction.CounterRejected,
+    snapshot: { auctionId: row.proposal.auctionId, bidId: row.proposal.bidId, responseNote: note },
+  });
+
+  // Notify the proposing seller's user in-app.
+  const [bid] = await db
+    .select({ sellerUserId: bids.sellerUserId })
+    .from(bids)
+    .where(eq(bids.id, row.proposal.bidId))
+    .limit(1);
+  if (bid) {
+    await db.insert(notifications).values({
+      userId: bid.sellerUserId,
+      type: decision === 'accepted' ? 'counter_proposal.accepted' : 'counter_proposal.rejected',
+      payload: { auctionId: row.proposal.auctionId, proposalId, name: row.auctionName },
+    });
+  }
+
+  revalidatePath(`/auctions/${row.proposal.auctionId}`);
+  return {
+    success:
+      decision === 'accepted'
+        ? 'Proposal accepted — the agreed terms are recorded for this seller.'
+        : 'Proposal rejected.',
+  };
 }

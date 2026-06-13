@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import { eq, desc, inArray } from 'drizzle-orm';
 import { requireUser } from '@/lib/auth/session';
 import { db } from '@/lib/db';
@@ -38,12 +39,20 @@ export default async function NetworkPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="space-y-6 lg:col-span-2">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Vendor network</h1>
-          <p className="text-muted-foreground">
-            Register trusted suppliers by GSTIN + CAS. &quot;Registered Only&quot; auctions go to
-            active partners; pending ones are skipped until they join.
-          </p>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Vendor network</h1>
+            <p className="text-muted-foreground">
+              Register trusted suppliers by GSTIN + CAS. &quot;Registered Only&quot; auctions go to
+              active partners; pending ones are skipped until they join.
+            </p>
+          </div>
+          <Link
+            href="/network/blocked"
+            className="shrink-0 text-sm font-medium text-muted-foreground underline hover:text-foreground"
+          >
+            Blocked companies →
+          </Link>
         </div>
 
         <Card>

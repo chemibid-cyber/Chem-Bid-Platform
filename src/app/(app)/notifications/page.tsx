@@ -26,6 +26,12 @@ function view(type: string, p: Payload): { title: string; href: string | null } 
       return { title: `A requirement you engaged with was cancelled: "${s(p.name)}"`, href: `/requests/${auctionId}` };
     case 'auction.stage2':
       return { title: `Counter-offer: ₹${s(p.rate)}/${unit} material rate for "${s(p.name)}"`, href: `/requests/${auctionId}` };
+    case 'counter_proposal.received':
+      return { title: `A seller proposed changes to "${s(p.name)}"`, href: `/auctions/${auctionId}` };
+    case 'counter_proposal.accepted':
+      return { title: `The buyer accepted your proposed changes to "${s(p.name)}"`, href: `/requests/${auctionId}` };
+    case 'counter_proposal.rejected':
+      return { title: `The buyer declined your proposed changes to "${s(p.name)}"`, href: `/requests/${auctionId}` };
     case 'deal.won':
       return { title: `You won the deal for "${s(p.name)}"`, href: `/deals/${s(p.dealId)}` };
     case 'deal.confirmed':

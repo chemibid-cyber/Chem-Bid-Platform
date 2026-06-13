@@ -3,7 +3,8 @@
 import { useState } from 'react';
 import { useFormState } from 'react-dom';
 import { submitBidAction, type BidFormState } from '../actions';
-import { PAYMENT_TERMS_LABEL, UNIT_LABEL, formatRate } from '@/lib/format';
+import { PAYMENT_TERMS_OPTIONS, UNIT_LABEL, formatRate } from '@/lib/format';
+import { computeTaxFromPct, effectiveFreight, type LogisticsBasis } from '@/lib/pricing';
 import { SubmitButton } from '@/components/submit-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,14 +16,22 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 export interface BidInitial {
   basic: string | null;
   freight: string | null;
-  tax: string | null;
+  /** The tax % the seller entered (#19). Optional — the page may not thread it. */
+  taxPct?: string | null;
+  /**
+   * @deprecated Tax is now entered as a % (`taxPct`). This holds the legacy
+   * absolute ₹/unit amount; kept optional so the out-of-scope page that still
+   * passes it keeps compiling. Not rendered — prefill reads `taxPct`.
+   */
+  tax?: string | null;
   paymentTerms: string | null;
   leadTimeDays: number | null;
   coaOnDispatch: boolean;
   hasCoa: boolean;
 }
 
-const TERMS = ['advance', 'net15', 'net30', 'net45', 'lc'];
+// #18: full payment-terms set MINUS 'other' (bids carry no custom-terms field).
+const TERM_OPTIONS = PAYMENT_TERMS_OPTIONS.filter((t) => t.value !== 'other');
 
 export function BidForm({
   auctionId,
@@ -31,19 +40,26 @@ export function BidForm({
   initial,
 }: {
   auctionId: string;
-  basis: 'delivered' | 'exworks';
+  basis: LogisticsBasis;
   unit: string;
   initial: BidInitial;
 }) {
   const [state, action] = useFormState<BidFormState, FormData>(submitBidAction, null);
   const [basic, setBasic] = useState(initial.basic ?? '');
   const [freight, setFreight] = useState(initial.freight ?? '');
-  const [tax, setTax] = useState(initial.tax ?? '');
+  const [taxPct, setTaxPct] = useState(initial.taxPct ?? '');
   const [coaOnDispatch, setCoaOnDispatch] = useState(initial.coaOnDispatch);
 
   const unitLabel = UNIT_LABEL[unit] ?? unit;
-  const total =
-    Number(basic || 0) + (basis === 'exworks' ? 0 : Number(freight || 0)) + Number(tax || 0);
+  // #24: freight may be 0 (Delivered/Other) or forced 0 (Ex-Works). #19: tax is
+  // a % of (material + effective freight); display the derived ₹/unit amount.
+  const basicNum = Number(basic || 0);
+  const freightNum = Number(freight || 0);
+  const taxPctNum = Number(taxPct || 0);
+  const taxAmount = computeTaxFromPct(taxPctNum, basicNum, freightNum, basis);
+  const total = Math.max(0, basicNum) + effectiveFreight(freightNum, basis) + taxAmount;
+  // #24: freight input is visible for both Delivered AND Other (0 is allowed).
+  const showFreight = basis !== 'exworks';
 
   return (
     <form action={action} className="space-y-5">
@@ -73,7 +89,7 @@ export function BidForm({
             required
           />
         </div>
-        {basis === 'delivered' ? (
+        {showFreight ? (
           <div className="space-y-2">
             <Label htmlFor="freight">Transport (₹/{unitLabel})</Label>
             <Input
@@ -84,8 +100,9 @@ export function BidForm({
               min="0"
               value={freight}
               onChange={(e) => setFreight(e.target.value)}
-              required
+              placeholder="0"
             />
+            <p className="text-xs text-muted-foreground">Enter 0 if freight is included or not applicable.</p>
           </div>
         ) : (
           <div className="space-y-2">
@@ -97,17 +114,26 @@ export function BidForm({
           </div>
         )}
         <div className="space-y-2">
-          <Label htmlFor="tax">Tax (₹/{unitLabel})</Label>
+          <Label htmlFor="taxPct">Tax (%)</Label>
           <Input
-            id="tax"
-            name="tax"
+            id="taxPct"
+            name="taxPct"
             type="number"
             step="0.01"
             min="0"
-            value={tax}
-            onChange={(e) => setTax(e.target.value)}
+            value={taxPct}
+            onChange={(e) => setTaxPct(e.target.value)}
             placeholder="0"
           />
+          <p className="text-xs text-muted-foreground">
+            {taxPctNum > 0 ? (
+              <>
+                {formatRate(taxPctNum)}% = ₹{formatRate(taxAmount)}/{unitLabel} (auto-calculated)
+              </>
+            ) : (
+              <>Applied to material + transport.</>
+            )}
+          </p>
         </div>
       </div>
 
@@ -117,7 +143,8 @@ export function BidForm({
           ₹{formatRate(total)}/{unitLabel}
         </span>{' '}
         <span className="text-muted-foreground">
-          = material + transport + tax · ranked on this full amount · for the full quantity
+          = material + transport + tax (₹{formatRate(taxAmount)}/{unitLabel}) · ranked on this full amount ·
+          for the full quantity
         </span>
       </div>
 
@@ -125,9 +152,9 @@ export function BidForm({
         <div className="space-y-2">
           <Label htmlFor="paymentTerms">Payment terms</Label>
           <Select id="paymentTerms" name="paymentTerms" defaultValue={initial.paymentTerms ?? 'net30'}>
-            {TERMS.map((t) => (
-              <option key={t} value={t}>
-                {PAYMENT_TERMS_LABEL[t]}
+            {TERM_OPTIONS.map((t) => (
+              <option key={t.value} value={t.value}>
+                {t.label}
               </option>
             ))}
           </Select>

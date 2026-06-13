@@ -59,14 +59,78 @@ export function istLocalToDate(local: string): Date {
   return new Date(`${withSeconds}+05:30`);
 }
 
+/** Render a Date as an IST datetime-local value ("YYYY-MM-DDTHH:mm") for form prefills. */
+export function dateToIstLocal(date: Date | string | number | null | undefined): string {
+  if (date == null) return '';
+  const d = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(d.getTime())) return '';
+  // en-CA gives ISO-ish "YYYY-MM-DD, HH:mm" parts; assemble the datetime-local string in IST.
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(d);
+  const get = (t: string) => parts.find((p) => p.type === t)?.value ?? '';
+  const hour = get('hour') === '24' ? '00' : get('hour'); // guard the en-CA midnight quirk
+  return `${get('year')}-${get('month')}-${get('day')}T${hour}:${get('minute')}`;
+}
+
 export const UNIT_LABEL: Record<string, string> = { kg: 'kg', mt: 'MT', l: 'L' };
 
 export const PAYMENT_TERMS_LABEL: Record<string, string> = {
-  advance: 'Advance',
-  net15: 'Net 15',
-  net30: 'Net 30',
-  net45: 'Net 45',
+  advance: 'Advance payment',
+  immediate: 'Immediate payment',
+  net7: 'Net 7 days',
+  net15: 'Net 15 days',
+  net30: 'Net 30 days',
+  net45: 'Net 45 days',
+  net60: 'Net 60 days',
+  net90: 'Net 90 days',
+  net120: 'Net 120 days',
   lc: 'Letter of Credit',
+  other: 'Other (custom)',
+};
+
+/** Ordered options for payment-terms dropdowns (auction + bid). */
+export const PAYMENT_TERMS_OPTIONS: { value: string; label: string }[] = [
+  'advance',
+  'immediate',
+  'net7',
+  'net15',
+  'net30',
+  'net45',
+  'net60',
+  'net90',
+  'net120',
+  'lc',
+  'other',
+].map((value) => ({ value, label: PAYMENT_TERMS_LABEL[value] ?? value }));
+
+/** Freight handling (#24) — buyer-stated, shown to sellers. */
+export const FREIGHT_TERMS_LABEL: Record<string, string> = {
+  included: 'Freight included',
+  excluded: 'Freight excluded',
+  extra: 'Freight extra',
+  buyer_pickup: 'Buyer pickup',
+  seller_arranged: 'Seller arranged transport',
+};
+
+export const FREIGHT_TERMS_OPTIONS: { value: string; label: string }[] = [
+  'included',
+  'excluded',
+  'extra',
+  'buyer_pickup',
+  'seller_arranged',
+].map((value) => ({ value, label: FREIGHT_TERMS_LABEL[value] ?? value }));
+
+export const LOGISTICS_BASIS_LABEL: Record<string, string> = {
+  delivered: 'Delivered (seller quotes freight)',
+  exworks: 'Ex-Works (buyer arranges pickup)',
+  other: 'Other (custom terms)',
 };
 
 export const GRADE_LABEL: Record<string, string> = {

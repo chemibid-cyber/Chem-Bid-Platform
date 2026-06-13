@@ -4,7 +4,7 @@ import { and, eq, asc, isNotNull, inArray } from 'drizzle-orm';
 import { Building2 } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
 import { db } from '@/lib/db';
-import { auctions, bids, companies, users, blocks, deals } from '@/lib/db/schema';
+import { auctions, bids, companies, users, blocks, deals, counterProposals } from '@/lib/db/schema';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
@@ -13,7 +13,15 @@ import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { averageTotal, effectiveTotal } from '@/lib/ranking';
 import { stage2Total } from '@/lib/pricing';
-import { formatRate, timeRemaining, UNIT_LABEL, PAYMENT_TERMS_LABEL } from '@/lib/format';
+import {
+  formatRate,
+  formatIST,
+  timeRemaining,
+  UNIT_LABEL,
+  PAYMENT_TERMS_LABEL,
+  FREIGHT_TERMS_LABEL,
+  LOGISTICS_BASIS_LABEL,
+} from '@/lib/format';
 import { Stage2LaunchForm } from './stage2-launch-form';
 import { CoaDownload } from './coa-download';
 import { ConfirmDealForm, BlockSellerButton } from './settle-actions';
@@ -103,6 +111,14 @@ export default async function ReviewPage({
       .map((b) => b.blockedCompanyId),
   );
 
+  // Sellers whose structured counter-proposal the buyer ACCEPTED (#21) — surface
+  // a read-only badge so the buyer remembers the agreed term mod when settling.
+  const acceptedProposals = await db
+    .select({ sellerCompanyId: counterProposals.sellerCompanyId })
+    .from(counterProposals)
+    .where(and(eq(counterProposals.auctionId, auction.id), eq(counterProposals.status, 'accepted')));
+  const hasAcceptedProposal = new Set(acceptedProposals.map((p) => p.sellerCompanyId));
+
   const unit = UNIT_LABEL[auction.unit] ?? auction.unit;
   const avg = averageTotal(rows.map((r) => Number(r.stage1Total)));
   // The counter is on the MATERIAL rate — suggest from the lowest material bid.
@@ -133,6 +149,59 @@ export default async function ReviewPage({
           {inStage2 && !closed ? ' · Stage-2 in progress' : ''}
         </p>
       </div>
+
+      {/* The buyer's own requested commercial terms (sellers quoted against these). */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Your requested terms</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <dl className="grid gap-4 text-sm sm:grid-cols-3">
+            <div>
+              <dt className="text-xs uppercase tracking-wide text-muted-foreground">Quantity</dt>
+              <dd className="mt-0.5 font-medium">{auction.quantity} {unit}</dd>
+            </div>
+            <div>
+              <dt className="text-xs uppercase tracking-wide text-muted-foreground">Delivery terms</dt>
+              <dd className="mt-0.5 font-medium">
+                {auction.logisticsBasis === 'other'
+                  ? auction.deliveryTermsCustom ?? LOGISTICS_BASIS_LABEL.other
+                  : LOGISTICS_BASIS_LABEL[auction.logisticsBasis] ?? auction.logisticsBasis}
+              </dd>
+            </div>
+            {auction.paymentTerms ? (
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-muted-foreground">Payment terms</dt>
+                <dd className="mt-0.5 font-medium">
+                  {auction.paymentTerms === 'other'
+                    ? auction.paymentTermsCustom ?? PAYMENT_TERMS_LABEL.other
+                    : PAYMENT_TERMS_LABEL[auction.paymentTerms] ?? auction.paymentTerms}
+                </dd>
+              </div>
+            ) : null}
+            {auction.freightTerms ? (
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-muted-foreground">Freight handling</dt>
+                <dd className="mt-0.5 font-medium">
+                  {FREIGHT_TERMS_LABEL[auction.freightTerms] ?? auction.freightTerms}
+                </dd>
+              </div>
+            ) : null}
+            {auction.offerValidUntil ? (
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-muted-foreground">Offer valid until</dt>
+                <dd className="mt-0.5 font-medium">{formatIST(auction.offerValidUntil)}</dd>
+              </div>
+            ) : null}
+            {auction.supplyValidUntil ? (
+              <div>
+                <dt className="text-xs uppercase tracking-wide text-muted-foreground">Supply valid until</dt>
+                <dd className="mt-0.5 font-medium">{formatIST(auction.supplyValidUntil)}</dd>
+              </div>
+            ) : null}
+          </dl>
+        </CardContent>
+      </Card>
 
       {searchParams.confirmed || closed ? (
         <Alert variant="success">
@@ -201,6 +270,9 @@ export default async function ReviewPage({
                         {r.status === 'lost' ? <Badge variant="secondary">Not selected</Badge> : null}
                         {blocked.has(r.sellerCompanyId) ? (
                           <Badge variant="destructive">🔴 Blocked</Badge>
+                        ) : null}
+                        {hasAcceptedProposal.has(r.sellerCompanyId) ? (
+                          <Badge variant="brand">Agreed term change</Badge>
                         ) : null}
                       </div>
                       <p className="text-sm text-muted-foreground">

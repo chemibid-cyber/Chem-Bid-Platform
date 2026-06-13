@@ -1,14 +1,22 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, desc } from 'drizzle-orm';
 import { Lock, Building2 } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
 import { db } from '@/lib/db';
-import { auctions, bids, companies, users, deals } from '@/lib/db/schema';
+import { auctions, bids, companies, users, deals, counterProposals } from '@/lib/db/schema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { formatIST, timeRemaining, UNIT_LABEL } from '@/lib/format';
+import {
+  formatIST,
+  timeRemaining,
+  UNIT_LABEL,
+  PAYMENT_TERMS_LABEL,
+  FREIGHT_TERMS_LABEL,
+  LOGISTICS_BASIS_LABEL,
+  dateToIstLocal,
+} from '@/lib/format';
 import {
   AcceptButton,
   IgnoreButton,
@@ -19,6 +27,7 @@ import {
 import { BidForm } from './bid-form';
 import { RankWidget } from './rank-widget';
 import { Stage2Respond } from './stage2-respond';
+import { CounterProposalForm, type CurrentProposal } from './counter-form';
 import { ReportButton } from '@/components/app/report-button';
 import { Hint } from '@/components/ui/help';
 
@@ -59,25 +68,75 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
     wonDealId = deal?.id ?? null;
   }
 
-  // Buyer identity is revealed only AFTER this seller accepts (or post-close).
+  // The seller's most recent counter-proposal for this auction (#21). A pending
+  // one is shown read-only with Withdraw; a terminal one (accepted/rejected) is
+  // shown as a status banner above a fresh form so they can re-propose.
+  let currentProposal: CurrentProposal | null = null;
+  if (accepted) {
+    const [cp] = await db
+      .select()
+      .from(counterProposals)
+      .where(
+        and(
+          eq(counterProposals.auctionId, auction.id),
+          eq(counterProposals.sellerCompanyId, company.id),
+        ),
+      )
+      .orderBy(desc(counterProposals.createdAt))
+      .limit(1);
+    if (cp && cp.status !== 'withdrawn') {
+      currentProposal = {
+        id: cp.id,
+        status: cp.status,
+        proposedQuantity: cp.proposedQuantity,
+        proposedUnit: cp.proposedUnit,
+        proposedPacking: cp.proposedPacking,
+        proposedLogisticsBasis: cp.proposedLogisticsBasis,
+        proposedDeliveryAddress: cp.proposedDeliveryAddress,
+        proposedOfferValidUntil: cp.proposedOfferValidUntil?.toISOString() ?? null,
+        proposedSupplyValidUntil: cp.proposedSupplyValidUntil?.toISOString() ?? null,
+        note: cp.note,
+        buyerResponseNote: cp.buyerResponseNote,
+      };
+    }
+  }
+
+  // Buyer identity + contact is revealed only AFTER this seller accepts (or
+  // post-close). Everything in this block is gated by (accepted || !open).
   let buyerName = 'A verified buyer';
   let buyerActor = '';
   let buyerScore: number | null = null;
+  let buyerEmail: string | null = null;
+  let buyerPhone: string | null = null;
+  let buyerAddress: string | null = null;
   if (accepted || !open) {
     const [buyerCompany] = await db
-      .select({ legalName: companies.legalName, completionScore: companies.completionScore })
+      .select({
+        legalName: companies.legalName,
+        completionScore: companies.completionScore,
+        registeredAddress: companies.registeredAddress,
+      })
       .from(companies)
       .where(eq(companies.id, auction.buyerCompanyId))
       .limit(1);
     buyerScore = buyerCompany?.completionScore ?? null;
+    buyerAddress = buyerCompany?.registeredAddress ?? null;
     const [buyerUser] = await db
-      .select({ firstName: users.firstName, lastName: users.lastName, designation: users.designation })
+      .select({
+        firstName: users.firstName,
+        lastName: users.lastName,
+        designation: users.designation,
+        email: users.email,
+        phone: users.phone,
+      })
       .from(users)
       .where(eq(users.id, auction.buyerUserId))
       .limit(1);
     buyerName = buyerCompany?.legalName ?? buyerName;
     if (buyerUser) {
       buyerActor = `${buyerUser.firstName} ${buyerUser.lastName}${buyerUser.designation ? `, ${buyerUser.designation}` : ''}`;
+      buyerEmail = buyerUser.email ?? null;
+      buyerPhone = buyerUser.phone ?? null;
     }
   }
 
@@ -108,26 +167,39 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
         {accepted ? <SellerSpecDownload auctionId={auction.id} /> : null}
       </div>
 
-      {/* Buyer identity card */}
+      {/* Buyer identity card — identity + contact only inside the post-accept gate */}
       <Card>
-        <CardContent className="flex items-center gap-3 py-4">
-          <Building2 className="h-5 w-5 text-muted-foreground" />
-          <div className="flex-1">
-            <p className="font-medium">{buyerName}</p>
-            {buyerActor ? (
-              <p className="text-sm text-muted-foreground">{buyerActor}</p>
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                Identity is revealed once you Accept &amp; Quote.
-              </p>
-            )}
+        <CardContent className="space-y-3 py-4">
+          <div className="flex items-center gap-3">
+            <Building2 className="h-5 w-5 text-muted-foreground" />
+            <div className="flex-1">
+              <p className="font-medium">{buyerName}</p>
+              {buyerActor ? (
+                <p className="text-sm text-muted-foreground">{buyerActor}</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Identity is revealed once you Accept &amp; Quote.
+                </p>
+              )}
+            </div>
+            {buyerScore != null ? (
+              <Badge variant={buyerScore >= 70 ? 'success' : buyerScore >= 40 ? 'warning' : 'destructive'}>
+                Completion score {buyerScore}
+              </Badge>
+            ) : null}
+            {accepted ? <ReportButton companyId={auction.buyerCompanyId} label="Report buyer" /> : null}
           </div>
-          {buyerScore != null ? (
-            <Badge variant={buyerScore >= 70 ? 'success' : buyerScore >= 40 ? 'warning' : 'destructive'}>
-              Completion score {buyerScore}
-            </Badge>
+          {buyerEmail || buyerPhone || buyerAddress ? (
+            <dl className="grid gap-3 border-t pt-3 text-sm sm:grid-cols-2">
+              {buyerEmail ? <Detail label="Email" value={buyerEmail} /> : null}
+              {buyerPhone ? <Detail label="Phone" value={buyerPhone} /> : null}
+              {buyerAddress ? (
+                <div className="sm:col-span-2">
+                  <Detail label="Location" value={buyerAddress} />
+                </div>
+              ) : null}
+            </dl>
           ) : null}
-          {accepted ? <ReportButton companyId={auction.buyerCompanyId} label="Report buyer" /> : null}
         </CardContent>
       </Card>
 
@@ -141,7 +213,36 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
             <Detail label="Quantity" value={`${auction.quantity} ${UNIT_LABEL[auction.unit] ?? auction.unit}`} />
             <Detail label="Minimum purity" value={auction.minPurity ? `${auction.minPurity}%` : '—'} />
             <Detail label="Packing" value={auction.packing ?? ''} />
-            <Detail label="Logistics" value={auction.logisticsBasis === 'exworks' ? 'Ex-Works (you pickup)' : 'Delivered'} />
+            <Detail
+              label="Delivery terms"
+              value={
+                auction.logisticsBasis === 'other'
+                  ? auction.deliveryTermsCustom ?? LOGISTICS_BASIS_LABEL.other
+                  : LOGISTICS_BASIS_LABEL[auction.logisticsBasis] ?? auction.logisticsBasis
+              }
+            />
+            {auction.paymentTerms ? (
+              <Detail
+                label="Payment terms"
+                value={
+                  auction.paymentTerms === 'other'
+                    ? auction.paymentTermsCustom ?? PAYMENT_TERMS_LABEL.other
+                    : PAYMENT_TERMS_LABEL[auction.paymentTerms] ?? auction.paymentTerms
+                }
+              />
+            ) : null}
+            {auction.freightTerms ? (
+              <Detail
+                label="Freight handling"
+                value={FREIGHT_TERMS_LABEL[auction.freightTerms] ?? auction.freightTerms}
+              />
+            ) : null}
+            {auction.offerValidUntil ? (
+              <Detail label="Offer valid until" value={formatIST(auction.offerValidUntil)} />
+            ) : null}
+            {auction.supplyValidUntil ? (
+              <Detail label="Supply valid until" value={formatIST(auction.supplyValidUntil)} />
+            ) : null}
             {accepted ? (
               <div className="sm:col-span-2">
                 <Detail label="Delivery address" value={auction.deliveryAddress} />
@@ -191,6 +292,30 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
         </Card>
       ) : null}
 
+      {/* Seller structured counter-proposal (#21) — only once accepted & open */}
+      {accepted && open ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Propose changes to the requirement</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <CounterProposalForm
+              auctionId={auction.id}
+              prefill={{
+                quantity: String(auction.quantity),
+                unit: auction.unit,
+                packing: auction.packing ?? '',
+                logisticsBasis: auction.logisticsBasis,
+                deliveryAddress: auction.deliveryAddress,
+                offerValidUntilLocal: dateToIstLocal(auction.offerValidUntil),
+                supplyValidUntilLocal: dateToIstLocal(auction.supplyValidUntil),
+              }}
+              current={currentProposal}
+            />
+          </CardContent>
+        </Card>
+      ) : null}
+
       {/* Gate / bid */}
       {!open && !stage2Active ? (
         <Alert>
@@ -235,7 +360,7 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
                 initial={{
                   basic: bid.stage1Basic,
                   freight: bid.stage1Freight,
-                  tax: bid.stage1Tax,
+                  taxPct: bid.stage1TaxPct,
                   paymentTerms: bid.paymentTerms,
                   leadTimeDays: bid.leadTimeDays,
                   coaOnDispatch: bid.coaOnDispatch,

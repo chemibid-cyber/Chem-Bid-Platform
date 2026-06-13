@@ -1,10 +1,13 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useFormState } from 'react-dom';
 import { Ban, Check } from 'lucide-react';
 import { confirmDealAction, blockSellerAction, type AuctionFormState } from '../../actions';
-import { ConfirmButton } from '@/components/ui/confirm-dialog';
+import { ConfirmButton, ConfirmDialog } from '@/components/ui/confirm-dialog';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { Select } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export function ConfirmDealForm({
@@ -45,6 +48,16 @@ export function ConfirmDealForm({
   );
 }
 
+type BlockScope = 'this_cas' | 'all';
+
+/** Duration choices map to a months value, or null for a permanent block (#16). */
+const DURATION_OPTIONS: { value: string; label: string; months: number | null }[] = [
+  { value: '1', label: '1 month', months: 1 },
+  { value: '3', label: '3 months', months: 3 },
+  { value: '6', label: '6 months', months: 6 },
+  { value: 'permanent', label: 'Permanent', months: null },
+];
+
 export function BlockSellerButton({
   auctionId,
   sellerCompanyId,
@@ -52,21 +65,96 @@ export function BlockSellerButton({
   auctionId: string;
   sellerCompanyId: string;
 }) {
+  const [open, setOpen] = useState(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [scope, setScope] = useState<BlockScope>('this_cas');
+  const [duration, setDuration] = useState<string>('permanent');
+
+  function reset() {
+    setScope('this_cas');
+    setDuration('permanent');
+    setError(null);
+  }
+
+  async function run() {
+    if (pending) return; // guard against a double-submit
+    setPending(true);
+    setError(null);
+    try {
+      const months = DURATION_OPTIONS.find((d) => d.value === duration)?.months ?? null;
+      const res = await blockSellerAction(auctionId, sellerCompanyId, scope, months);
+      if (res?.error) {
+        setError(res.error);
+        return;
+      }
+      setOpen(false);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong. Try again.');
+    } finally {
+      setPending(false);
+    }
+  }
+
   return (
-    <ConfirmButton
-      variant="ghost"
-      size="sm"
-      className="text-destructive"
-      title="Block this seller for this CAS?"
-      description="They'll be muted for your future requirements on this chemical. Their existing bid stays in the audit trail."
-      confirmLabel="Block seller"
-      destructive
-      onConfirm={async () => {
-        const res = await blockSellerAction(auctionId, sellerCompanyId);
-        if (res?.error) throw new Error(res.error);
-      }}
-    >
-      <Ban className="h-4 w-4" /> Block
-    </ConfirmButton>
+    <>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="text-destructive"
+        onClick={() => {
+          reset();
+          setOpen(true);
+        }}
+      >
+        <Ban className="h-4 w-4" /> Block
+      </Button>
+      <ConfirmDialog
+        open={open}
+        onClose={() => !pending && setOpen(false)}
+        title="Block this seller?"
+        description={
+          <div className="space-y-3">
+            <p>
+              They&apos;ll be muted for your future requirements per the scope below. Their existing
+              bid stays in the audit trail.
+            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="blockScope">Scope</Label>
+              <Select
+                id="blockScope"
+                value={scope}
+                onChange={(e) => setScope(e.target.value as BlockScope)}
+                disabled={pending}
+              >
+                <option value="this_cas">This CAS only</option>
+                <option value="all">All products</option>
+              </Select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="blockDuration">Duration</Label>
+              <Select
+                id="blockDuration"
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                disabled={pending}
+              >
+                {DURATION_OPTIONS.map((d) => (
+                  <option key={d.value} value={d.value}>
+                    {d.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
+        }
+        confirmLabel="Block seller"
+        destructive
+        pending={pending}
+        error={error}
+        onConfirm={run}
+      />
+    </>
   );
 }

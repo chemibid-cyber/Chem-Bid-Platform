@@ -96,6 +96,7 @@ export async function runTargeting(auction: Auction): Promise<{ notified: number
       blockedCompanyId: blocks.blockedCompanyId,
       scope: blocks.scope,
       casNumber: blocks.casNumber,
+      expiresAt: blocks.expiresAt,
     })
     .from(blocks)
     .where(
@@ -104,8 +105,12 @@ export async function runTargeting(auction: Auction): Promise<{ notified: number
         eq(blocks.blockerCompanyId, auction.buyerCompanyId),
       ),
     );
-  const applies = (b: (typeof blockRows)[number]) =>
-    b.scope === 'all' || b.casNumber === auction.casNumber;
+  const now = new Date();
+  const applies = (b: (typeof blockRows)[number]) => {
+    // An expired block (null = permanent) no longer mutes anyone (#16).
+    if (b.expiresAt != null && new Date(b.expiresAt) <= now) return false;
+    return b.scope === 'all' || b.casNumber === auction.casNumber;
+  };
   const excluded = new Set<string>();
   for (const b of blockRows) {
     if (!applies(b)) continue;
@@ -238,11 +243,13 @@ export async function retroMatchSalesItem(input: RetroMatchInput): Promise<{ mat
       blockedCompanyId: blocks.blockedCompanyId,
       scope: blocks.scope,
       casNumber: blocks.casNumber,
+      expiresAt: blocks.expiresAt,
     })
     .from(blocks)
     .where(
       or(eq(blocks.blockerCompanyId, input.companyId), eq(blocks.blockedCompanyId, input.companyId)),
     );
+  const now = new Date();
 
   const seller: SellerCandidate = {
     companyId: input.companyId,
@@ -268,6 +275,8 @@ export async function retroMatchSalesItem(input: RetroMatchInput): Promise<{ mat
 
     // Blocks, both directions, scoped to this auction's CAS.
     const blocked = blockRows.some((b) => {
+      // An expired block (null = permanent) no longer mutes anyone (#16).
+      if (b.expiresAt != null && new Date(b.expiresAt) <= now) return false;
       if (b.scope !== 'all' && b.casNumber !== auction.casNumber) return false;
       const sellerBlockedBuyer =
         b.blockerCompanyId === input.companyId && b.blockedCompanyId === auction.buyerCompanyId;

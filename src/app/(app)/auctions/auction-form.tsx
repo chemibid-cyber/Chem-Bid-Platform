@@ -7,6 +7,11 @@ import { createAuctionAction, type AuctionFormState } from './actions';
 import { resolveCasAction } from '../catalog/actions';
 import type { CasResolution, CasCandidate } from '@/lib/cas/parse';
 import { ROLES } from '@/lib/catalog/constants';
+import {
+  PAYMENT_TERMS_OPTIONS,
+  FREIGHT_TERMS_OPTIONS,
+  LOGISTICS_BASIS_LABEL,
+} from '@/lib/format';
 import { SubmitButton } from '@/components/submit-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +32,10 @@ export interface AuctionInitial {
   minPurity: string | null;
   packing: string | null;
   logisticsBasis: string;
+  deliveryTermsCustom: string | null;
+  paymentTerms: string | null;
+  paymentTermsCustom: string | null;
+  freightTerms: string | null;
   supplierFilter: string[];
   remarks: string | null;
   privacyMode: string;
@@ -66,6 +75,10 @@ export function AuctionForm({
   const [mixtureText, setMixtureText] = useState(initial?.mixtureText ?? '');
   const [nameVerified, setNameVerified] = useState(false);
   const [resolving, startResolve] = useTransition();
+
+  // #14 / #18 — reveal a free-text input when the buyer picks the "other" option.
+  const [logisticsBasis, setLogisticsBasis] = useState(initial?.logisticsBasis ?? 'delivered');
+  const [paymentTerms, setPaymentTerms] = useState(initial?.paymentTerms ?? '');
 
   // Product picker: a catalog item id, OTHER_OPTION (manual entry), or '' (none yet).
   // Pre-filled clones (which carry no catalog id) start on the manual path.
@@ -308,10 +321,92 @@ export function AuctionForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="logisticsBasis">Logistics basis</Label>
-          <Select id="logisticsBasis" name="logisticsBasis" defaultValue={initial?.logisticsBasis ?? 'delivered'}>
-            <option value="delivered">Delivered (seller quotes freight)</option>
+          <Select
+            id="logisticsBasis"
+            name="logisticsBasis"
+            value={logisticsBasis}
+            onChange={(e) => setLogisticsBasis(e.target.value)}
+          >
+            <option value="delivered">{LOGISTICS_BASIS_LABEL.delivered}</option>
             <option value="exworks">Ex-Works (you arrange pickup — no freight)</option>
+            <option value="other">{LOGISTICS_BASIS_LABEL.other}</option>
           </Select>
+        </div>
+      </div>
+
+      {/* #14 — custom delivery terms when logistics basis is "Other". */}
+      {logisticsBasis === 'other' ? (
+        <div className="space-y-2">
+          <Label htmlFor="deliveryTermsCustom">Custom delivery terms</Label>
+          <Textarea
+            id="deliveryTermsCustom"
+            name="deliveryTermsCustom"
+            placeholder="Describe the delivery arrangement (e.g. FOR destination, partial CIF…)."
+            defaultValue={initial?.deliveryTermsCustom ?? ''}
+            required
+          />
+        </div>
+      ) : null}
+
+      {/* #18 — payment terms for this requirement (required); #24 — freight handling. */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="paymentTerms">Payment terms</Label>
+          <Select
+            id="paymentTerms"
+            name="paymentTerms"
+            value={paymentTerms}
+            onChange={(e) => setPaymentTerms(e.target.value)}
+            required
+          >
+            <option value="" disabled>
+              Select payment terms…
+            </option>
+            {PAYMENT_TERMS_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </Select>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="freightTerms">Freight handling</Label>
+          <Select id="freightTerms" name="freightTerms" defaultValue={initial?.freightTerms ?? ''}>
+            <option value="">Not specified</option>
+            {FREIGHT_TERMS_OPTIONS.map((o) => (
+              <option key={o.value} value={o.value}>
+                {o.label}
+              </option>
+            ))}
+          </Select>
+          <p className="text-xs text-muted-foreground">Informational — shown to sellers.</p>
+        </div>
+      </div>
+
+      {paymentTerms === 'other' ? (
+        <div className="space-y-2">
+          <Label htmlFor="paymentTermsCustom">Custom payment terms</Label>
+          <Input
+            id="paymentTermsCustom"
+            name="paymentTermsCustom"
+            placeholder="e.g. 30% advance, balance against documents"
+            defaultValue={initial?.paymentTermsCustom ?? ''}
+            required
+          />
+        </div>
+      ) : null}
+
+      {/* #22 — optional offer / supply validity windows (IST). */}
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-2">
+          <Label htmlFor="offerValidUntil">Offer valid until (optional)</Label>
+          <Input id="offerValidUntil" name="offerValidUntil" type="datetime-local" min={minLocal} />
+          <p className="text-xs text-muted-foreground">How long your requirement stays open to quotes.</p>
+        </div>
+        <div className="space-y-2">
+          <Label htmlFor="supplyValidUntil">Supply valid until (optional)</Label>
+          <Input id="supplyValidUntil" name="supplyValidUntil" type="datetime-local" min={minLocal} />
+          <p className="text-xs text-muted-foreground">By when you need the material supplied.</p>
         </div>
       </div>
 

@@ -5,6 +5,7 @@ import {
   validateBidPricing,
   isValidStage2Rate,
   stage2Total,
+  computeTaxFromPct,
   round2,
 } from './pricing';
 
@@ -24,10 +25,26 @@ describe('pricing', () => {
     expect(computeTotalRate({ basic: 100, freight: 50, tax: 10, basis: 'exworks' })).toBe(110);
   });
 
-  it('requires freight for Delivered, not for Ex-Works', () => {
-    expect(validateBidPricing({ basic: 100, freight: 0, basis: 'delivered' }).ok).toBe(false);
+  it('allows freight 0 on any basis (#24) but rejects a negative freight', () => {
+    // Freight may be 0 (e.g. included in the material rate) — even for Delivered.
+    expect(validateBidPricing({ basic: 100, freight: 0, basis: 'delivered' }).ok).toBe(true);
     expect(validateBidPricing({ basic: 100, freight: 0, basis: 'exworks' }).ok).toBe(true);
+    expect(validateBidPricing({ basic: 100, freight: 0, basis: 'other' }).ok).toBe(true);
     expect(validateBidPricing({ basic: 100, freight: 10, basis: 'delivered' }).ok).toBe(true);
+    // Negative freight is still invalid.
+    expect(validateBidPricing({ basic: 100, freight: -5, basis: 'delivered' }).ok).toBe(false);
+  });
+
+  it('computes tax from a percentage of (material + effective freight) (#19)', () => {
+    // 18% of (100 material + 50 freight) on a Delivered bid = 27.
+    expect(computeTaxFromPct(18, 100, 50, 'delivered')).toBe(27);
+    // Ex-Works zeroes freight from the taxable base → 18% of 100 = 18.
+    expect(computeTaxFromPct(18, 100, 50, 'exworks')).toBe(18);
+    // 'other' basis counts freight like Delivered → 10% of 150 = 15.
+    expect(computeTaxFromPct(10, 100, 50, 'other')).toBe(15);
+    // 0% and negative % both yield 0.
+    expect(computeTaxFromPct(0, 100, 50, 'delivered')).toBe(0);
+    expect(computeTaxFromPct(-5, 100, 50, 'delivered')).toBe(0);
   });
 
   it('rejects a non-positive material rate and a negative tax', () => {
