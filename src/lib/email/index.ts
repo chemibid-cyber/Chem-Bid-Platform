@@ -21,7 +21,7 @@ function stripHtml(html: string): string {
  */
 export async function sendEmail(input: SendEmailInput): Promise<{ ok: boolean; id?: string }> {
   const key = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM ?? 'Chemical Auction <onboarding@resend.dev>';
+  const from = process.env.EMAIL_FROM ?? 'Chemical Auction <notify@chemibid.com>';
 
   if (!key) {
     // eslint-disable-next-line no-console
