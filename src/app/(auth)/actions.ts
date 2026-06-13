@@ -277,12 +277,12 @@ export async function updatePasswordAction(
   if (tokenHash) {
     const { error: verr } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: otpType });
     if (verr) {
-      return { error: 'Your reset link is invalid or has expired. Request a new one.' };
+      return { error: 'This reset link is invalid or has expired. Request a new one.' };
     }
   }
 
   const { data: auth } = await supabase.auth.getUser();
-  if (!auth.user) return { error: 'Your reset link has expired. Request a new one.' };
+  if (!auth.user) return { error: 'This reset link is invalid or has expired. Request a new one.' };
 
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: 'Could not update password. The link may have expired.' };

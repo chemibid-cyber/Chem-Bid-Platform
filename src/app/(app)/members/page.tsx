@@ -1,4 +1,3 @@
-import Link from 'next/link';
 import { eq, desc } from 'drizzle-orm';
 import { requireAdmin } from '@/lib/auth/session';
 import { db } from '@/lib/db';
@@ -6,10 +5,9 @@ import { users } from '@/lib/db/schema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { buttonVariants } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import { AddMemberForm } from './add-member-form';
 import { MemberCapabilities } from './member-capabilities';
+import { MemberRowActions } from './member-row-actions';
 
 export const metadata = { title: 'Members' };
 
@@ -59,23 +57,21 @@ export default async function MembersPage() {
                     )}
                   </TableCell>
                   <TableCell>
-                    <Badge
-                      variant={
-                        m.status === 'active' ? 'success' : m.status === 'invited' ? 'warning' : 'secondary'
-                      }
-                    >
-                      {m.status}
-                    </Badge>
+                    {m.status === 'active' ? (
+                      <Badge variant="success">Active</Badge>
+                    ) : m.status === 'invited' ? (
+                      <Badge variant="warning">Invited — pending</Badge>
+                    ) : (
+                      <Badge variant="secondary">Disabled</Badge>
+                    )}
                   </TableCell>
                   <TableCell className="text-right">
-                    {m.id !== user.id && m.status !== 'disabled' ? (
-                      <Link
-                        href={`/members/${m.id}/disable`}
-                        className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }), 'text-destructive')}
-                      >
-                        Disable
-                      </Link>
-                    ) : null}
+                    <MemberRowActions
+                      memberId={m.id}
+                      memberName={`${m.firstName} ${m.lastName}`}
+                      status={m.status}
+                      isSelf={m.id === user.id}
+                    />
                   </TableCell>
                 </TableRow>
               ))}

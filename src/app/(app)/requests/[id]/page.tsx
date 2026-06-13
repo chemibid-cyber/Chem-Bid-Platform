@@ -161,7 +161,9 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
           </div>
           <p className="text-muted-foreground">
             {auction.casNumber ? `CAS ${auction.casNumber}` : 'Custom mixture'} ·{' '}
-            {open ? `closes in ${timeRemaining(auction.closesAt)}` : `closed ${formatIST(auction.closesAt)}`}
+            {open
+              ? `Closes: ${formatIST(auction.closesAt)} (in ${timeRemaining(auction.closesAt)})`
+              : `closed ${formatIST(auction.closesAt)}`}
           </p>
         </div>
         {accepted ? <SellerSpecDownload auctionId={auction.id} /> : null}

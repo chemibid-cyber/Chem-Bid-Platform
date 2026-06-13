@@ -7,7 +7,7 @@ import { and, eq, isNotNull } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { auctions, bids, blocks, counterProposals, notifications } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/session';
-import { computeTaxFromPct, computeTotalRate, validateBidPricing, isValidStage2Rate } from '@/lib/pricing';
+import { computeTaxFromPct, computeTotalRate, validateBidPricing, isValidStage2Rate, round2 } from '@/lib/pricing';
 import { rankOf } from '@/lib/ranking';
 import { uploadFile, signedUrl } from '@/lib/storage';
 import { istLocalToDate } from '@/lib/format';
@@ -176,12 +176,14 @@ export async function submitBidAction(_prev: BidFormState, formData: FormData): 
   if (!bid) return { error: 'You were not invited to this requirement.' };
   if (bid.gateState !== 'accepted') return { error: 'Accept the requirement before quoting.' };
 
-  const basic = Number(data.basic);
-  const freightInput = Number(data.freight ?? '0');
+  // #27: money/quantity values store at 2 decimals regardless of input. Round
+  // the raw inputs first so tax + total are computed from the persisted figures.
+  const basic = round2(Number(data.basic));
+  const freightInput = round2(Number(data.freight ?? '0'));
   const basis = auction.logisticsBasis;
   // #19: tax arrives as a percentage; derive the per-unit ₹ amount from
   // material + effective freight. Negatives clamp to 0 inside the helper.
-  const taxPct = Number(data.taxPct?.trim() ? data.taxPct : '0');
+  const taxPct = round2(Number(data.taxPct?.trim() ? data.taxPct : '0'));
   const tax = computeTaxFromPct(taxPct, basic, freightInput, basis);
   const pricing = validateBidPricing({ basic, freight: freightInput, tax, basis });
   if (!pricing.ok) return { error: pricing.errors.join(' ') };
@@ -327,7 +329,7 @@ export async function stage2RespondAction(
   if (action === 'accept') {
     stage2Rate = auction.stage2Target;
   } else if (action === 'final') {
-    const rate = Number(finalRateRaw);
+    const rate = round2(Number(finalRateRaw)); // #27 — store at 2dp
     if (!isValidStage2Rate(rate, stage1Material)) {
       return {
         error: `Your final material rate must be greater than 0 and at most your Stage-1 material rate (₹${stage1Material}). Transport + tax carry over from Stage-1.`,
@@ -415,10 +417,10 @@ export async function counterProposeAction(
     proposedSupplyValidUntil = d;
   }
 
-  // Quantity (optional) — if provided, must be a positive number.
+  // Quantity (optional) — if provided, must be a positive number. #27: store at 2dp.
   let proposedQuantity: string | null = null;
   if (data.proposedQuantity?.trim()) {
-    const q = Number(data.proposedQuantity);
+    const q = round2(Number(data.proposedQuantity));
     if (!Number.isFinite(q) || q <= 0) return { error: 'Proposed quantity must be greater than 0.' };
     proposedQuantity = String(q);
   }

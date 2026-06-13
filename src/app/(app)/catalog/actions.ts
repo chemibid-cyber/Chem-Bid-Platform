@@ -13,6 +13,13 @@ import { isValidCasFormat, type CasResolution } from '@/lib/cas/parse';
 import { recordAudit, AuditAction } from '@/lib/audit';
 import { retroMatchSalesItem } from '@/lib/targeting/run';
 import { ROLES } from '@/lib/catalog/constants';
+import { round2 } from '@/lib/pricing';
+
+/** Round an optional purity-% string to 2dp; '' / undefined → null. (#27) */
+function round2Purity(raw: string | undefined): string | null {
+  if (!raw || raw.trim() === '') return null;
+  return String(round2(Number(raw)));
+}
 
 const GRADE_VALUES = ['pure', 'distilled', 'trade'] as const;
 const ROLE_VALUES: readonly string[] = ROLES.map((r) => r.value);
@@ -114,7 +121,7 @@ export async function createCatalogItemAction(
     }
   }
 
-  const minPurity = data.minPurity && data.minPurity.trim() !== '' ? data.minPurity.trim() : null;
+  const minPurity = round2Purity(data.minPurity); // #27 — 2dp
 
   const [created] = await db
     .insert(catalogItems)
@@ -240,8 +247,7 @@ export async function updateCatalogItemAction(
   }
 
   const roles = formData.getAll('roles').map(String).filter((r) => ROLE_VALUES.includes(r));
-  const minPurity =
-    parsed.data.minPurity && parsed.data.minPurity.trim() !== '' ? parsed.data.minPurity.trim() : null;
+  const minPurity = round2Purity(parsed.data.minPurity); // #27 — 2dp
 
   await db
     .update(catalogItems)

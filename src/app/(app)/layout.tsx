@@ -4,6 +4,8 @@ import { AlertTriangle } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
 import { getActiveMode } from '@/lib/auth/mode';
 import { AppHeader } from '@/components/app/app-header';
+import { Toaster } from '@/components/ui/toaster';
+import { NotificationToaster } from '@/components/app/notification-toaster';
 import { db } from '@/lib/db';
 import { notifications } from '@/lib/db/schema';
 
@@ -18,8 +20,10 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const unread = Number(unreadRows[0]?.value ?? 0);
 
   return (
-    <div className="min-h-screen bg-muted/20">
-      <AppHeader user={user} company={company} mode={mode} unreadCount={unread} />
+    <Toaster>
+      <NotificationToaster />
+      <div className="min-h-screen bg-muted/20">
+        <AppHeader user={user} company={company} mode={mode} unreadCount={unread} />
 
       {company.verificationStatus !== 'verified' ? (
         <div className="border-b border-warning/40 bg-warning/10">
@@ -38,7 +42,8 @@ export default async function AppLayout({ children }: { children: React.ReactNod
         </div>
       ) : null}
 
-      <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
-    </div>
+        <main className="mx-auto max-w-7xl px-4 py-6">{children}</main>
+      </div>
+    </Toaster>
   );
 }

@@ -4,7 +4,7 @@ import { useFormState } from 'react-dom';
 import { launchStage2Action } from '../../actions';
 import type { AuctionFormState } from '../../actions';
 import { SubmitButton } from '@/components/submit-button';
-import { Input } from '@/components/ui/input';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -25,7 +25,7 @@ export function Stage2LaunchForm({ auctionId, unit, lowest }: { auctionId: strin
       <input type="hidden" name="auctionId" value={auctionId} />
       <div className="space-y-2">
         <Label htmlFor="targetRate">Single counter on the material rate (₹/{unit})</Label>
-        <Input id="targetRate" name="targetRate" type="number" step="0.01" min="0" placeholder={lowest} required />
+        <DecimalInput id="targetRate" name="targetRate" maxDecimals={2} min="0" placeholder={lowest} required />
         <p className="text-xs text-muted-foreground">
           Negotiation is on the <strong>material rate</strong> — each seller&apos;s transport + tax
           carry over from their Stage-1 bid. Blasted to all participants for one 24-hour round.

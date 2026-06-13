@@ -15,6 +15,7 @@ import {
 import { SubmitButton } from '@/components/submit-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { FileDropzone } from '@/components/ui/file-dropzone';
 import { Textarea } from '@/components/ui/textarea';
@@ -298,7 +299,7 @@ export function AuctionForm({
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="quantity">Quantity</Label>
-          <Input id="quantity" name="quantity" type="number" step="0.001" min="0" defaultValue={initial?.quantity ?? ''} required />
+          <DecimalInput id="quantity" name="quantity" maxDecimals={2} min="0" defaultValue={initial?.quantity ?? ''} required />
         </div>
         <div className="space-y-2">
           <Label htmlFor="unit">Unit</Label>
@@ -310,7 +311,7 @@ export function AuctionForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="minPurity">Min purity (%)</Label>
-          <Input id="minPurity" name="minPurity" type="number" step="0.01" min="0" max="100" defaultValue={initial?.minPurity ?? ''} />
+          <DecimalInput id="minPurity" name="minPurity" maxDecimals={2} min="0" max="100" defaultValue={initial?.minPurity ?? ''} />
         </div>
       </div>
 

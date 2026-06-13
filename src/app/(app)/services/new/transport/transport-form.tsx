@@ -7,6 +7,7 @@ import { PAYMENT_TERMS_LABEL } from '@/lib/format';
 import { SubmitButton } from '@/components/submit-button';
 import { PlacesInput } from '@/components/places-input';
 import { Input } from '@/components/ui/input';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
@@ -37,14 +38,14 @@ export function TransportRequestForm() {
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="totalQtyKg">Total quantity (kg)</Label>
-          <Input id="totalQtyKg" name="totalQtyKg" type="number" step="0.001" min="0" required />
+          <DecimalInput id="totalQtyKg" name="totalQtyKg" maxDecimals={2} min="0" required />
           <p className="text-xs text-muted-foreground">
             Gross weight: chemical + packaging together.
           </p>
         </div>
         <div className="space-y-2">
           <Label htmlFor="lotQtyKg">One-lot quantity (kg, optional)</Label>
-          <Input id="lotQtyKg" name="lotQtyKg" type="number" step="0.001" min="0" />
+          <DecimalInput id="lotQtyKg" name="lotQtyKg" maxDecimals={2} min="0" />
           <p className="text-xs text-muted-foreground">Max per truck/tanker load, incl. packing.</p>
         </div>
       </div>

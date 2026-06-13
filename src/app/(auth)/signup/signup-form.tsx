@@ -8,6 +8,7 @@ import { signUpAction, verifyGstinAction, type GstPreview } from '../actions';
 import { SubmitButton } from '@/components/submit-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -176,7 +177,7 @@ export function SignupForm() {
 
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
-              <Input id="password" name="password" type="password" autoComplete="new-password" required />
+              <PasswordInput id="password" name="password" autoComplete="new-password" required />
               <p className="text-xs text-muted-foreground">
                 At least 8 characters, with 3 of: lowercase, uppercase, number, symbol.
               </p>

@@ -4,7 +4,7 @@ import { useFormState } from 'react-dom';
 import Link from 'next/link';
 import { acceptInviteAction, type AcceptState } from './actions';
 import { SubmitButton } from '@/components/submit-button';
-import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -26,7 +26,7 @@ export function AcceptInviteForm({ tokenHash, type }: { tokenHash: string; type:
       </p>
       <div className="space-y-2">
         <Label htmlFor="password">Create a password</Label>
-        <Input id="password" name="password" type="password" autoComplete="new-password" required />
+        <PasswordInput id="password" name="password" autoComplete="new-password" required />
         <p className="text-xs text-muted-foreground">
           At least 8 characters, with 3 of: lowercase, uppercase, number, symbol.
         </p>

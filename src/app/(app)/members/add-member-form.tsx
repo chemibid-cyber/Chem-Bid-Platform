@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useFormState } from 'react-dom';
 import { addMemberAction, type MemberFormState } from './actions';
 import { SubmitButton } from '@/components/submit-button';
@@ -10,9 +11,25 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export function AddMemberForm() {
   const [state, action] = useFormState<MemberFormState, FormData>(addMemberAction, null);
+  // #34: enforce >=1 capability on the client (server re-checks in addMemberAction).
+  // The checkboxes keep their `name` so they still serialize via FormData (server
+  // reads `canBuy === 'on'`); the mirrored state only gates submit + shows a hint.
+  const [canBuy, setCanBuy] = useState(false);
+  const [canSell, setCanSell] = useState(false);
+  const [capError, setCapError] = useState<string | null>(null);
+  const noCapability = !canBuy && !canSell;
 
   return (
-    <form action={action} className="space-y-4">
+    <form
+      action={action}
+      className="space-y-4"
+      onSubmit={(e) => {
+        if (noCapability) {
+          e.preventDefault();
+          setCapError('Select at least one capability: Buy or Sell.');
+        }
+      }}
+    >
       {state?.error ? (
         <Alert variant="destructive">
           <AlertDescription>{state.error}</AlertDescription>
@@ -58,17 +75,34 @@ export function AddMemberForm() {
 
       <div className="space-y-2">
         <Label>Capabilities</Label>
-        <div className="flex gap-6">
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox name="canBuy" /> Can buy
+        <div className="flex flex-wrap gap-x-6 gap-y-2">
+          <label className="inline-flex cursor-pointer items-center gap-2 text-sm leading-none">
+            <Checkbox
+              name="canBuy"
+              checked={canBuy}
+              onChange={(e) => {
+                setCanBuy(e.target.checked);
+                if (e.target.checked || canSell) setCapError(null);
+              }}
+            />
+            <span>Can buy</span>
           </label>
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox name="canSell" /> Can sell
+          <label className="inline-flex cursor-pointer items-center gap-2 text-sm leading-none">
+            <Checkbox
+              name="canSell"
+              checked={canSell}
+              onChange={(e) => {
+                setCanSell(e.target.checked);
+                if (e.target.checked || canBuy) setCapError(null);
+              }}
+            />
+            <span>Can sell</span>
           </label>
         </div>
+        {capError ? <p className="text-xs text-destructive">{capError}</p> : null}
       </div>
 
-      <SubmitButton>Send invite</SubmitButton>
+      <SubmitButton disabled={noCapability}>Send invite</SubmitButton>
     </form>
   );
 }

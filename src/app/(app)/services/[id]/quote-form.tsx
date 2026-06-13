@@ -6,7 +6,7 @@ import { submitServiceQuoteAction, type ServiceFormState } from '../actions';
 import { transportTotal, packingTotal } from '@/lib/services/totals';
 import { formatINR } from '@/lib/format';
 import { SubmitButton } from '@/components/submit-button';
-import { Input } from '@/components/ui/input';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -60,11 +60,10 @@ export function ServiceQuoteForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
           <Label htmlFor="baseRate">Base rate ({rateUnit})</Label>
-          <Input
+          <DecimalInput
             id="baseRate"
             name="baseRate"
-            type="number"
-            step="0.01"
+            maxDecimals={2}
             min="0"
             value={baseRate}
             onChange={(e) => setBaseRate(e.target.value)}
@@ -73,11 +72,10 @@ export function ServiceQuoteForm({
         </div>
         <div className="space-y-2">
           <Label htmlFor="taxAmount">Tax — absolute (₹)</Label>
-          <Input
+          <DecimalInput
             id="taxAmount"
             name="taxAmount"
-            type="number"
-            step="0.01"
+            maxDecimals={2}
             min="0"
             value={tax}
             onChange={(e) => setTax(e.target.value)}

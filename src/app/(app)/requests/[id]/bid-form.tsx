@@ -7,6 +7,7 @@ import { PAYMENT_TERMS_OPTIONS, UNIT_LABEL, formatRate } from '@/lib/format';
 import { computeTaxFromPct, effectiveFreight, type LogisticsBasis } from '@/lib/pricing';
 import { SubmitButton } from '@/components/submit-button';
 import { Input } from '@/components/ui/input';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { FileDropzone } from '@/components/ui/file-dropzone';
 import { Select } from '@/components/ui/select';
@@ -78,11 +79,10 @@ export function BidForm({
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="basic">Material rate (₹/{unitLabel})</Label>
-          <Input
+          <DecimalInput
             id="basic"
             name="basic"
-            type="number"
-            step="0.01"
+            maxDecimals={2}
             min="0"
             value={basic}
             onChange={(e) => setBasic(e.target.value)}
@@ -92,11 +92,10 @@ export function BidForm({
         {showFreight ? (
           <div className="space-y-2">
             <Label htmlFor="freight">Transport (₹/{unitLabel})</Label>
-            <Input
+            <DecimalInput
               id="freight"
               name="freight"
-              type="number"
-              step="0.01"
+              maxDecimals={2}
               min="0"
               value={freight}
               onChange={(e) => setFreight(e.target.value)}
@@ -115,11 +114,10 @@ export function BidForm({
         )}
         <div className="space-y-2">
           <Label htmlFor="taxPct">Tax (%)</Label>
-          <Input
+          <DecimalInput
             id="taxPct"
             name="taxPct"
-            type="number"
-            step="0.01"
+            maxDecimals={2}
             min="0"
             value={taxPct}
             onChange={(e) => setTaxPct(e.target.value)}
@@ -194,7 +192,7 @@ export function BidForm({
         ) : null}
       </div>
 
-      <SubmitButton>{initial.basic ? 'Revise bid' : 'Submit bid'}</SubmitButton>
+      <SubmitButton>{initial.basic ? 'Modify bid' : 'Submit bid'}</SubmitButton>
     </form>
   );
 }

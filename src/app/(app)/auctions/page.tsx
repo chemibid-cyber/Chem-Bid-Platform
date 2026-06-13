@@ -88,7 +88,9 @@ export default async function AuctionsPage() {
                             <div className="text-sm text-muted-foreground">
                               {a.quantity} {UNIT_LABEL[a.unit] ?? a.unit} ·{' '}
                               {Number(a.bidCount)} bid{Number(a.bidCount) === 1 ? '' : 's'} ·{' '}
-                              {a.status === 'active' ? `closes in ${timeRemaining(a.closesAt)}` : formatIST(a.closesAt)}
+                              {a.status === 'active'
+                                ? `Closes: ${formatIST(a.closesAt)} (in ${timeRemaining(a.closesAt)})`
+                                : formatIST(a.closesAt)}
                             </div>
                           </div>
                           <div className="flex items-center gap-2">

@@ -7,6 +7,7 @@ import { counterProposeAction, withdrawCounterProposalAction, type BidFormState 
 import { SubmitButton } from '@/components/submit-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
@@ -150,11 +151,10 @@ export function CounterProposalForm({
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-1.5">
               <Label htmlFor="proposedQuantity">Quantity</Label>
-              <Input
+              <DecimalInput
                 id="proposedQuantity"
                 name="proposedQuantity"
-                type="number"
-                step="0.001"
+                maxDecimals={2}
                 min="0"
                 defaultValue={prefill.quantity}
               />

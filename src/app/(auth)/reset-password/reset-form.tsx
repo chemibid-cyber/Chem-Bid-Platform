@@ -1,9 +1,10 @@
 'use client';
 
 import { useFormState } from 'react-dom';
+import Link from 'next/link';
 import { updatePasswordAction } from '../actions';
 import { SubmitButton } from '@/components/submit-button';
-import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +17,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 export function ResetPasswordForm({ tokenHash, type }: { tokenHash: string; type: string }) {
   const [state, action] = useFormState(updatePasswordAction, null);
 
+  // The token-related failures from updatePasswordAction all mention "expired";
+  // when that's the cause, point the user straight at a fresh reset link.
+  const linkExpired = Boolean(state?.error && /expired/i.test(state.error));
+
   return (
     <Card>
       <CardHeader>
@@ -26,17 +31,26 @@ export function ResetPasswordForm({ tokenHash, type }: { tokenHash: string; type
         <form action={action} className="space-y-4">
           {state?.error ? (
             <Alert variant="destructive">
-              <AlertDescription>{state.error}</AlertDescription>
+              <AlertDescription className="space-y-2">
+                <span className="block">{state.error}</span>
+                {linkExpired ? (
+                  <Link
+                    href="/forgot-password"
+                    className="inline-flex font-medium underline underline-offset-2"
+                  >
+                    Request a new reset link
+                  </Link>
+                ) : null}
+              </AlertDescription>
             </Alert>
           ) : null}
           <input type="hidden" name="token_hash" value={tokenHash} />
           <input type="hidden" name="type" value={type} />
           <div className="space-y-2">
             <Label htmlFor="password">New password</Label>
-            <Input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               autoComplete="new-password"
               required
             />

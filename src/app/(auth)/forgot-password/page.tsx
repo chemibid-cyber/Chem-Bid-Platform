@@ -31,6 +31,10 @@ export default function ForgotPasswordPage() {
           </div>
           <SubmitButton className="w-full">Send reset link</SubmitButton>
         </form>
+        <p className="mt-3 text-center text-xs text-muted-foreground">
+          Each reset link is single-use — older emails stop working once you request a new one, so
+          always open the most recent link.
+        </p>
         <p className="mt-4 text-center text-sm text-muted-foreground">
           <Link href="/login" className="font-medium text-foreground hover:underline">
             Back to log in

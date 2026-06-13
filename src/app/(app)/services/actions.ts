@@ -26,6 +26,7 @@ import {
   SERVICE_KIND_LABEL,
 } from '@/lib/services/constants';
 import { transportTotal, packingTotal, validateQuote, providerMatchesRequest } from '@/lib/services/totals';
+import { round2 } from '@/lib/pricing';
 import { PAYMENT_TERMS_LABEL } from '@/lib/format';
 
 export type ServiceFormState = { error?: string; success?: string } | null;
@@ -396,8 +397,10 @@ export async function submitServiceQuoteAction(
     };
   }
 
-  const baseRate = Number(data.baseRate);
-  const taxAmount = Number(data.taxAmount?.trim() ? data.taxAmount : '0');
+  // #27: money values store at 2 decimals regardless of input; the total is
+  // then computed from the rounded base rate + tax (matches the displayed total).
+  const baseRate = round2(Number(data.baseRate));
+  const taxAmount = round2(Number(data.taxAmount?.trim() ? data.taxAmount : '0'));
   const check = validateQuote(baseRate, taxAmount);
   if (!check.ok) return { error: check.errors.join(' ') };
 

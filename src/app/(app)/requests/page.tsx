@@ -53,7 +53,9 @@ export default async function RequestsPage() {
               </div>
               <div className="text-sm text-muted-foreground">
                 {r.quantity} {UNIT_LABEL[r.unit] ?? r.unit} ·{' '}
-                {isActive(r.status) ? `closes in ${timeRemaining(r.closesAt)}` : formatIST(r.closesAt)}
+                {isActive(r.status)
+                  ? `Closes: ${formatIST(r.closesAt)} (in ${timeRemaining(r.closesAt)})`
+                  : formatIST(r.closesAt)}
               </div>
             </div>
             <div className="flex items-center gap-2">

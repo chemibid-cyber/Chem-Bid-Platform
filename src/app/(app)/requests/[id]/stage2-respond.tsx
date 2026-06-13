@@ -5,7 +5,7 @@ import { Loader2 } from 'lucide-react';
 import { stage2RespondAction } from '../actions';
 import { formatRate } from '@/lib/format';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -85,10 +85,9 @@ export function Stage2Respond({
             <Label htmlFor="finalRate" className="text-xs">
               Final material rate (≤ ₹{stage1Material})
             </Label>
-            <Input
+            <DecimalInput
               id="finalRate"
-              type="number"
-              step="0.01"
+              maxDecimals={2}
               min="0"
               value={finalRate}
               onChange={(e) => setFinalRate(e.target.value)}

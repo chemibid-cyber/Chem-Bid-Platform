@@ -23,7 +23,7 @@ import { istLocalToDate, PAYMENT_TERMS_LABEL } from '@/lib/format';
 import { uploadFile, signedUrl } from '@/lib/storage';
 import { runTargeting } from '@/lib/targeting/run';
 import { effectiveTotal } from '@/lib/ranking';
-import { stage2Total } from '@/lib/pricing';
+import { stage2Total, round2 } from '@/lib/pricing';
 import { rateLimit, dayKey } from '@/lib/ratelimit';
 import { recordAudit, AuditAction } from '@/lib/audit';
 import { sendEmail } from '@/lib/email';
@@ -109,8 +109,17 @@ export async function createAuctionAction(
     if (!isValidCasFormat(casNumber)) return { error: 'That CAS number is not valid (e.g. 108-88-3).' };
   }
 
-  const quantity = Number(data.quantity);
+  // #27: quantity stores at 2 decimals regardless of input.
+  const quantity = round2(Number(data.quantity));
   if (!Number.isFinite(quantity) || quantity <= 0) return { error: 'Quantity must be greater than 0.' };
+
+  // #27: min purity (optional %) also rounds to 2 decimals when present.
+  let minPurity: string | null = null;
+  if (data.minPurity?.trim()) {
+    const p = round2(Number(data.minPurity));
+    if (!Number.isFinite(p) || p < 0) return { error: 'Minimum purity cannot be negative.' };
+    minPurity = String(p);
+  }
 
   const closesAt = istLocalToDate(data.closesAt);
   const timing = validateClosingTime(closesAt);
@@ -190,7 +199,7 @@ export async function createAuctionAction(
       name: data.name.trim(),
       quantity: String(quantity),
       unit: data.unit,
-      minPurity: data.minPurity?.trim() || null,
+      minPurity,
       packing: data.packing?.trim() || null,
       deliveryAddress: data.deliveryAddress.trim(),
       logisticsBasis: data.logisticsBasis,
@@ -345,7 +354,8 @@ export async function launchStage2Action(
 ): Promise<AuctionFormState> {
   const { user, company } = await requireUser();
   const auctionId = String(formData.get('auctionId') ?? '');
-  const targetRate = Number(formData.get('targetRate') ?? '');
+  // #27: counter rate stores at 2 decimals regardless of input.
+  const targetRate = round2(Number(formData.get('targetRate') ?? ''));
 
   const [auction] = await db
     .select()

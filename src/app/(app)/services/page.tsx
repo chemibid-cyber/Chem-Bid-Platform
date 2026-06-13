@@ -138,7 +138,12 @@ export default async function ServicesPage() {
         Speed over secrecy, because trucks and drums can&apos;t wait.
       </Hint>
 
-      <div className={cn('grid gap-4', providerOnly ? 'sm:grid-cols-1' : 'sm:grid-cols-3')}>
+      <div
+        className={cn(
+          'grid gap-4',
+          providerOnly ? 'sm:grid-cols-1' : profile?.active ? 'sm:grid-cols-3' : 'sm:grid-cols-2',
+        )}
+      >
         {!providerOnly ? (
           <>
             <Link href="/services/new/transport">
@@ -175,24 +180,29 @@ export default async function ServicesPage() {
             </Link>
           </>
         ) : null}
-        <Link href="/services/providers">
-          <Card className="h-full transition-shadow hover:shadow-md">
-            <CardContent className="flex h-full flex-col gap-2 py-5">
-              <div className="flex items-center justify-between">
-                <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand/10 text-brand">
-                  <Wrench className="h-5 w-5" />
-                </span>
-                <ArrowRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-              <p className="font-semibold">{profile?.active ? 'My provider profile' : 'Become a provider'}</p>
-              <p className="text-sm text-muted-foreground">
-                {profile?.active
-                  ? 'Update the vehicle classes / packing types you serve.'
-                  : 'Offer transport or packing supply — get matching inquiries by email.'}
-              </p>
-            </CardContent>
-          </Card>
-        </Link>
+        {/* Provider-profile card: only for provider-only accounts (who need it to set
+            up/edit their profile), or for a trader who already has an active profile to
+            manage. Hidden from the normal buyer/seller view. */}
+        {providerOnly || profile?.active ? (
+          <Link href="/services/providers">
+            <Card className="h-full transition-shadow hover:shadow-md">
+              <CardContent className="flex h-full flex-col gap-2 py-5">
+                <div className="flex items-center justify-between">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                    <Wrench className="h-5 w-5" />
+                  </span>
+                  <ArrowRight className="h-4 w-4 text-muted-foreground" />
+                </div>
+                <p className="font-semibold">{profile?.active ? 'My provider profile' : 'Become a provider'}</p>
+                <p className="text-sm text-muted-foreground">
+                  {profile?.active
+                    ? 'Update the vehicle classes / packing types you serve.'
+                    : 'Offer transport or packing supply — get matching inquiries by email.'}
+                </p>
+              </CardContent>
+            </Card>
+          </Link>
+        ) : null}
       </div>
 
       {profile?.active ? (

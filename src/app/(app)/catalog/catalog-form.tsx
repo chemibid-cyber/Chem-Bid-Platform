@@ -14,6 +14,7 @@ import { GRADES, ROLES } from '@/lib/catalog/constants';
 import { SubmitButton } from '@/components/submit-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
@@ -212,7 +213,7 @@ export function CatalogForm({ profileLabel }: { profileLabel: string }) {
         </div>
         <div className="space-y-2">
           <Label htmlFor="minPurity">Minimum purity (%)</Label>
-          <Input id="minPurity" name="minPurity" type="number" step="0.01" min="0" max="100" placeholder="99.5" />
+          <DecimalInput id="minPurity" name="minPurity" maxDecimals={2} min="0" max="100" placeholder="99.5" />
         </div>
       </div>
       <ul className="space-y-0.5 text-xs text-muted-foreground">

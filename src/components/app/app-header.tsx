@@ -1,5 +1,16 @@
 import Link from 'next/link';
-import { Gavel, Bell, ChevronDown, BadgeCheck, Clock, ShieldX } from 'lucide-react';
+import {
+  Gavel,
+  Bell,
+  ChevronDown,
+  BadgeCheck,
+  Clock,
+  ShieldX,
+  ShieldCheck,
+  ShoppingCart,
+  Tag,
+  Wrench,
+} from 'lucide-react';
 import { AppNav, type NavItem } from '@/components/app/app-nav';
 import { ModeToggle } from '@/components/app/mode-toggle';
 import { ProfileMenu } from '@/components/app/profile-menu';
@@ -23,6 +34,27 @@ function verificationBadge(status: Company['verificationStatus']) {
   return (
     <Badge variant="destructive" className="gap-1">
       <ShieldX className="h-3 w-3" /> Rejected
+    </Badge>
+  );
+}
+
+/** Compact pill showing the user's current operating context (Provider / Buyer / Seller). */
+function modeIndicator(providerOnly: boolean, mode: Mode) {
+  if (providerOnly)
+    return (
+      <Badge variant="brand" className="gap-1">
+        <Wrench className="h-3 w-3" /> Provider
+      </Badge>
+    );
+  if (mode === 'buy')
+    return (
+      <Badge variant="secondary" className="gap-1">
+        <ShoppingCart className="h-3 w-3" /> Buyer mode
+      </Badge>
+    );
+  return (
+    <Badge variant="secondary" className="gap-1">
+      <Tag className="h-3 w-3" /> Seller mode
     </Badge>
   );
 }
@@ -80,6 +112,16 @@ export function AppHeader({
         </div>
 
         <div className="ml-auto flex items-center gap-3">
+          {/* Role / context indicator: Admin badge + current operating mode (or Provider). */}
+          <div className="hidden items-center gap-2 sm:flex">
+            {user.isAdmin ? (
+              <Badge variant="brand" className="gap-1">
+                <ShieldCheck className="h-3 w-3" /> Admin
+              </Badge>
+            ) : null}
+            {modeIndicator(providerOnly, mode)}
+          </div>
+
           {/* Buy/Sell is meaningless for pure service providers (admin or not). */}
           {!providerOnly && canToggleMode(user) ? <ModeToggle mode={mode} /> : null}
 

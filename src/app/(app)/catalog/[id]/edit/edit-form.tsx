@@ -4,7 +4,7 @@ import { useFormState } from 'react-dom';
 import { updateCatalogItemAction, type CatalogFormState } from '../../actions';
 import { GRADES, ROLES } from '@/lib/catalog/constants';
 import { SubmitButton } from '@/components/submit-button';
-import { Input } from '@/components/ui/input';
+import { DecimalInput } from '@/components/ui/decimal-input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
@@ -63,11 +63,10 @@ export function CatalogEditForm({ item }: { item: EditItem }) {
         </div>
         <div className="space-y-2">
           <Label htmlFor="minPurity">Minimum purity (%)</Label>
-          <Input
+          <DecimalInput
             id="minPurity"
             name="minPurity"
-            type="number"
-            step="0.01"
+            maxDecimals={2}
             min="0"
             max="100"
             defaultValue={item.minPurity ?? ''}
