@@ -1,14 +1,14 @@
 import Link from 'next/link';
 import { redirect } from 'next/navigation';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, asc } from 'drizzle-orm';
 import { requireUser } from '@/lib/auth/session';
 import { db } from '@/lib/db';
-import { auctions } from '@/lib/db/schema';
+import { auctions, catalogItems } from '@/lib/db/schema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { AuctionForm, type AuctionInitial } from '../auction-form';
+import { AuctionForm, type AuctionInitial, type CatalogPick } from '../auction-form';
 
 export const metadata = { title: 'New auction' };
 
@@ -42,6 +42,25 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: {
     }
   }
 
+  // The buyer's procurement list — drives the product picker on the form.
+  const catalog: CatalogPick[] = await db
+    .select({
+      id: catalogItems.id,
+      casNumber: catalogItems.casNumber,
+      name: catalogItems.name,
+      isMixture: catalogItems.isMixture,
+      mixtureText: catalogItems.mixtureText,
+    })
+    .from(catalogItems)
+    .where(
+      and(
+        eq(catalogItems.companyId, company.id),
+        eq(catalogItems.profileType, 'purchase'),
+        eq(catalogItems.delisted, false),
+      ),
+    )
+    .orderBy(asc(catalogItems.name));
+
   return (
     <div className="mx-auto max-w-2xl space-y-4">
       <Link href="/auctions" className="text-sm text-muted-foreground hover:text-foreground">
@@ -63,7 +82,7 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: {
               </AlertDescription>
             </Alert>
           ) : (
-            <AuctionForm defaultAddress={company.registeredAddress} initial={initial} />
+            <AuctionForm defaultAddress={company.registeredAddress} initial={initial} catalog={catalog} />
           )}
         </CardContent>
       </Card>

@@ -11,10 +11,19 @@ export interface NavItem {
 
 export function AppNav({ items }: { items: NavItem[] }) {
   const pathname = usePathname();
+  // Highlight only the single most-specific match: among all items whose href
+  // matches the current path (exact, or as a path prefix), the longest href wins.
+  // e.g. '/auctions/new' → only 'New auction'; '/auctions/123' → only 'My auctions'.
+  const activeHref = items.reduce<string | null>((best, it) => {
+    const matches = pathname === it.href || pathname.startsWith(`${it.href}/`);
+    if (!matches) return best;
+    if (best === null || it.href.length > best.length) return it.href;
+    return best;
+  }, null);
   return (
     <nav className="flex items-center gap-1 overflow-x-auto">
       {items.map((it) => {
-        const active = pathname === it.href || pathname.startsWith(`${it.href}/`);
+        const active = it.href === activeHref;
         return (
           <Link
             key={it.href}

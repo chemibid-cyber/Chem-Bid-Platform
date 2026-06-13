@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { logInAction } from '../actions';
 import { SubmitButton } from '@/components/submit-button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,10 +37,9 @@ export function LoginForm({ initialError }: { initialError?: string }) {
                 Forgot password?
               </Link>
             </div>
-            <Input
+            <PasswordInput
               id="password"
               name="password"
-              type="password"
               autoComplete="current-password"
               required
             />

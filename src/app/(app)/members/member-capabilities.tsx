@@ -28,10 +28,10 @@ export function MemberCapabilities({
   return (
     <div className="flex gap-4" aria-busy={pending}>
       <label className="flex items-center gap-1.5 text-sm">
-        <Checkbox checked={buy} onChange={(e) => update(e.target.checked, sell)} /> Buy
+        <Checkbox checked={buy} disabled={pending} onChange={(e) => update(e.target.checked, sell)} /> Buy
       </label>
       <label className="flex items-center gap-1.5 text-sm">
-        <Checkbox checked={sell} onChange={(e) => update(buy, e.target.checked)} /> Sell
+        <Checkbox checked={sell} disabled={pending} onChange={(e) => update(buy, e.target.checked)} /> Sell
       </label>
     </div>
   );

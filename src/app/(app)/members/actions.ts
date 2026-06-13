@@ -44,7 +44,6 @@ export async function addMemberAction(
     email: data.email,
     options: {
       data: { first_name: data.firstName, last_name: data.lastName },
-      redirectTo: `${appUrl}/auth/callback?next=/accept-invite`,
     },
   });
   if (linkErr || !linkData.user) {
@@ -79,11 +78,19 @@ export async function addMemberAction(
     snapshot: { email: data.email, canBuy: data.canBuy === 'on', canSell: data.canSell === 'on' },
   });
 
-  if (linkData.properties?.action_link) {
+  // Email a link to OUR OWN /accept-invite page carrying the one-time
+  // `hashed_token` — NOT Supabase's /auth/v1/verify action_link. The token is only
+  // consumed when the invited user submits the form (see acceptInviteAction), so
+  // inbox link-scanners (Gmail/Outlook) that pre-fetch the URL can't burn it first.
+  // This mirrors the password-reset flow in (auth)/actions.ts requestResetAction.
+  if (linkData.properties?.hashed_token) {
+    const acceptUrl = `${appUrl}/accept-invite?token_hash=${encodeURIComponent(
+      linkData.properties.hashed_token,
+    )}&type=invite`;
     const tmpl = inviteEmail({
       companyName: company.legalName,
       inviterName: `${user.firstName} ${user.lastName}`,
-      acceptUrl: linkData.properties.action_link,
+      acceptUrl,
     });
     await sendEmail({ to: data.email, subject: tmpl.subject, html: tmpl.html, text: tmpl.text });
   }

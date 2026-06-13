@@ -1,12 +1,10 @@
-import Link from 'next/link';
 import { AlertTriangle } from 'lucide-react';
+import { BackButton } from './back-button';
 
 export default function LegalLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="mx-auto max-w-2xl px-6 py-12">
-      <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
-        ← Back
-      </Link>
+      <BackButton />
       <div className="mt-6 flex items-start gap-2 rounded-md border border-warning/40 bg-warning/10 p-3 text-sm">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-warning" />
         <p>

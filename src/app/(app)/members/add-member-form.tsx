@@ -60,10 +60,10 @@ export function AddMemberForm() {
         <Label>Capabilities</Label>
         <div className="flex gap-6">
           <label className="flex items-center gap-2 text-sm">
-            <Checkbox name="canBuy" defaultChecked /> Can buy
+            <Checkbox name="canBuy" /> Can buy
           </label>
           <label className="flex items-center gap-2 text-sm">
-            <Checkbox name="canSell" defaultChecked /> Can sell
+            <Checkbox name="canSell" /> Can sell
           </label>
         </div>
       </div>

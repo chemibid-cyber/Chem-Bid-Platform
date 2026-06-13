@@ -1,8 +1,8 @@
 import Link from 'next/link';
 import { Gavel, Bell, ChevronDown, BadgeCheck, Clock, ShieldX } from 'lucide-react';
-import { logOutAction } from '@/app/(auth)/actions';
 import { AppNav, type NavItem } from '@/components/app/app-nav';
 import { ModeToggle } from '@/components/app/mode-toggle';
+import { ProfileMenu } from '@/components/app/profile-menu';
 import { Badge } from '@/components/ui/badge';
 import { canToggleMode, type Mode } from '@/lib/auth/mode';
 import type { Company, User } from '@/lib/db/schema';
@@ -104,35 +104,11 @@ export function AppHeader({
               </span>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </summary>
-            <div className="absolute right-0 z-40 mt-2 w-56 rounded-lg border bg-popover p-1 shadow-md">
-              <div className="px-3 py-2">
-                <p className="text-sm font-medium">
-                  {user.firstName} {user.lastName}
-                </p>
-                <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-              </div>
-              <div className="my-1 h-px bg-border" />
-              <Link
-                href="/settings"
-                className="block rounded-md px-3 py-2 text-sm hover:bg-muted"
-              >
-                Company &amp; profile
-              </Link>
-              <Link
-                href="/settings/data"
-                className="block rounded-md px-3 py-2 text-sm hover:bg-muted"
-              >
-                Privacy &amp; data
-              </Link>
-              <form action={logOutAction}>
-                <button
-                  type="submit"
-                  className="w-full rounded-md px-3 py-2 text-left text-sm text-destructive hover:bg-destructive/10"
-                >
-                  Sign out
-                </button>
-              </form>
-            </div>
+            <ProfileMenu
+              firstName={user.firstName}
+              lastName={user.lastName}
+              email={user.email}
+            />
           </details>
         </div>
 

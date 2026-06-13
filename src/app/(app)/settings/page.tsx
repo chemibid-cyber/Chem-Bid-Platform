@@ -23,7 +23,7 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Company &amp; profile</h1>
+      <h1 className="text-2xl font-bold tracking-tight">My Company Profile</h1>
 
       <Card>
         <CardHeader className="flex-row items-start justify-between space-y-0">

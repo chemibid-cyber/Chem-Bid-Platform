@@ -11,6 +11,7 @@ import { SubmitButton } from '@/components/submit-button';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { FileDropzone } from '@/components/ui/file-dropzone';
 import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -32,6 +33,17 @@ export interface AuctionInitial {
   blind: boolean;
 }
 
+/** A row from the buyer's PURCHASE catalog, used to populate the product picker. */
+export interface CatalogPick {
+  id: string;
+  casNumber: string | null;
+  name: string;
+  isMixture: boolean;
+  mixtureText: string | null;
+}
+
+const OTHER_OPTION = '__other__';
+
 function toLocalInput(d: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
@@ -40,17 +52,29 @@ function toLocalInput(d: Date): string {
 export function AuctionForm({
   defaultAddress,
   initial,
+  catalog,
 }: {
   defaultAddress: string;
   initial?: AuctionInitial;
+  catalog: CatalogPick[];
 }) {
   const [state, action] = useFormState<AuctionFormState, FormData>(createAuctionAction, null);
   const [isMixture, setIsMixture] = useState(initial?.isMixture ?? false);
   const [cas, setCas] = useState(initial?.casNumber ?? '');
   const [resolution, setResolution] = useState<CasResolution | null>(null);
   const [name, setName] = useState(initial?.name ?? '');
+  const [mixtureText, setMixtureText] = useState(initial?.mixtureText ?? '');
   const [nameVerified, setNameVerified] = useState(false);
   const [resolving, startResolve] = useTransition();
+
+  // Product picker: a catalog item id, OTHER_OPTION (manual entry), or '' (none yet).
+  // Pre-filled clones (which carry no catalog id) start on the manual path.
+  const hasCatalog = catalog.length > 0;
+  const [picked, setPicked] = useState<string>(
+    hasCatalog && !initial ? '' : OTHER_OPTION,
+  );
+  const isManual = picked === OTHER_OPTION;
+  const selectedItem = catalog.find((c) => c.id === picked) ?? null;
 
   const now = new Date();
   const minLocal = toLocalInput(new Date(now.getTime() + 6 * 3_600_000));
@@ -78,67 +102,158 @@ export function AuctionForm({
     setNameVerified(true);
   }
 
-  const nameLocked = !isMixture && nameVerified && resolution?.status !== 'not_found';
+  function selectProduct(value: string) {
+    setPicked(value);
+    setResolution(null);
+    if (value === OTHER_OPTION || value === '') {
+      // Hand control back to the manual CAS / mixture flow.
+      setCas('');
+      setName('');
+      setMixtureText('');
+      setIsMixture(false);
+      setNameVerified(false);
+      return;
+    }
+    const item = catalog.find((c) => c.id === value);
+    if (!item) return;
+    setIsMixture(item.isMixture);
+    setCas(item.casNumber ?? '');
+    setName(item.name);
+    setMixtureText(item.mixtureText ?? '');
+    setNameVerified(!item.isMixture);
+  }
+
+  // Name auto-fills and locks when a catalog item is chosen, or when a manual CAS
+  // resolved to a single/disambiguated match. It stays editable only for genuine
+  // free-text mixtures (manual path) or when a manual CAS came back not_found.
+  const catalogLocked = selectedItem !== null;
+  const nameLocked =
+    catalogLocked || (!isMixture && nameVerified && resolution?.status !== 'not_found');
 
   return (
-    <form action={action} className="space-y-6">
+    <form
+      action={action}
+      className="space-y-6"
+      onKeyDown={(e) => {
+        // Prevent Enter inside a text input from submitting the half-filled form.
+        // Textareas keep Enter (newlines); the submit/buttons keep their click/Enter.
+        if (e.key !== 'Enter') return;
+        const target = e.target as HTMLElement;
+        if (target instanceof HTMLInputElement && target.type !== 'submit' && target.type !== 'button') {
+          e.preventDefault();
+        }
+      }}
+    >
       {state?.error ? (
         <Alert variant="destructive">
           <AlertDescription>{state.error}</AlertDescription>
         </Alert>
       ) : null}
 
-      <div className="flex items-center gap-2 rounded-md border bg-muted/30 p-3">
-        <Checkbox
-          id="isMixture"
-          name="isMixture"
-          checked={isMixture}
-          onChange={(e) => setIsMixture(e.target.checked)}
-        />
-        <Label htmlFor="isMixture" className="font-normal">
-          Custom mixture / blend (no single CAS)
-        </Label>
-      </div>
-
-      {!isMixture ? (
+      {hasCatalog ? (
         <div className="space-y-2">
-          <Label htmlFor="casNumber">CAS number</Label>
-          <div className="flex gap-2">
-            <Input
-              id="casNumber"
-              name="casNumber"
-              value={cas}
-              onChange={(e) => setCas(e.target.value)}
-              onKeyDown={(e) => {
-                // Enter resolves the CAS instead of submitting the half-filled form.
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  doResolve();
-                }
-              }}
-              placeholder="108-88-3"
+          <Label htmlFor="catalogPick">Product from your catalog</Label>
+          <Select
+            id="catalogPick"
+            value={picked}
+            onChange={(e) => selectProduct(e.target.value)}
+          >
+            <option value="" disabled>
+              Select a chemical…
+            </option>
+            {catalog.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+                {c.casNumber ? ` — CAS ${c.casNumber}` : ''}
+              </option>
+            ))}
+            <option value={OTHER_OPTION}>— Other (not in my catalog) —</option>
+          </Select>
+          <p className="text-xs text-muted-foreground">
+            Pick from your procurement list, or choose “Other” to enter a chemical manually.
+          </p>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          Add chemicals to your Catalog to pick them here.
+        </p>
+      )}
+
+      {/* Manual entry path: mixture toggle + CAS resolve. */}
+      {isManual ? (
+        <>
+          <div className="flex items-center gap-2 rounded-md border bg-muted/30 p-3">
+            <Checkbox
+              id="isMixture"
+              name="isMixture"
+              checked={isMixture}
+              onChange={(e) => setIsMixture(e.target.checked)}
             />
-            <Button type="button" variant="outline" onClick={doResolve} disabled={resolving}>
-              {resolving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
-              Resolve
-            </Button>
+            <Label htmlFor="isMixture" className="font-normal">
+              Custom mixture / blend (no single CAS)
+            </Label>
           </div>
-          {resolution?.status === 'not_found' ? (
-            <p className="text-sm text-warning-foreground">Couldn&apos;t find that CAS — type the name manually.</p>
-          ) : null}
-          {resolution?.status === 'ambiguous' ? (
-            <div className="rounded-md border p-3">
-              <p className="mb-2 text-sm font-medium">Multiple matches — pick one:</p>
-              {resolution.candidates.map((c) => (
-                <label key={c.cid} className="flex cursor-pointer items-center gap-2 text-sm">
-                  <input type="radio" name="cidPick" onChange={() => pick(c)} className="accent-primary" />
-                  {c.name} <span className="text-muted-foreground">(CID {c.cid})</span>
-                </label>
-              ))}
+
+          {!isMixture ? (
+            <div className="space-y-2">
+              <Label htmlFor="casNumber">CAS number</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="casNumber"
+                  name="casNumber"
+                  value={cas}
+                  onChange={(e) => setCas(e.target.value)}
+                  onKeyDown={(e) => {
+                    // Enter resolves the CAS instead of submitting the half-filled form.
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      doResolve();
+                    }
+                  }}
+                  placeholder="108-88-3"
+                />
+                <Button type="button" variant="outline" onClick={doResolve} disabled={resolving}>
+                  {resolving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Search className="h-4 w-4" />}
+                  Resolve
+                </Button>
+              </div>
+              {resolution?.status === 'not_found' ? (
+                <p className="text-sm text-warning-foreground">Couldn&apos;t find that CAS — type the name manually.</p>
+              ) : null}
+              {resolution?.status === 'ambiguous' ? (
+                <div className="rounded-md border p-3">
+                  <p className="mb-2 text-sm font-medium">Multiple matches — pick one:</p>
+                  {resolution.candidates.map((c) => (
+                    <label key={c.cid} className="flex cursor-pointer items-center gap-2 text-sm">
+                      <input type="radio" name="cidPick" onChange={() => pick(c)} className="accent-primary" />
+                      {c.name} <span className="text-muted-foreground">(CID {c.cid})</span>
+                    </label>
+                  ))}
+                </div>
+              ) : null}
             </div>
           ) : null}
-        </div>
-      ) : null}
+        </>
+      ) : (
+        // Catalog path: the item fixes the CAS + mixture flag — submit them as hidden
+        // fields so createAuctionAction reads the same names (casNumber / isMixture).
+        <>
+          {selectedItem && !selectedItem.isMixture ? (
+            <div className="space-y-2">
+              <Label htmlFor="casNumberDisplay">CAS number</Label>
+              <Input
+                id="casNumberDisplay"
+                name="casNumber"
+                value={cas}
+                readOnly
+                className="bg-muted font-semibold"
+              />
+            </div>
+          ) : null}
+          {selectedItem?.isMixture ? <input type="hidden" name="isMixture" value="on" /> : null}
+        </>
+      )}
 
       <div className="space-y-2">
         <Label htmlFor="name">{isMixture ? 'Mixture name' : 'Product name'}</Label>
@@ -156,7 +271,14 @@ export function AuctionForm({
       {isMixture ? (
         <div className="space-y-2">
           <Label htmlFor="mixtureText">Composition / notes</Label>
-          <Textarea id="mixtureText" name="mixtureText" defaultValue={initial?.mixtureText ?? ''} />
+          <Textarea
+            id="mixtureText"
+            name="mixtureText"
+            value={mixtureText}
+            onChange={(e) => setMixtureText(e.target.value)}
+            readOnly={catalogLocked}
+            className={catalogLocked ? 'bg-muted' : ''}
+          />
         </div>
       ) : null}
 
@@ -214,8 +336,12 @@ export function AuctionForm({
 
       <div className="space-y-2">
         <Label htmlFor="specFile">Spec sheet (optional)</Label>
-        <Input id="specFile" name="specFile" type="file" accept="application/pdf,image/jpeg,image/png" />
-        <p className="text-xs text-muted-foreground">PDF, JPG or PNG, up to 10 MB. Only accepted sellers can download it.</p>
+        <FileDropzone
+          id="specFile"
+          name="specFile"
+          accept="application/pdf,image/jpeg,image/png"
+          hint="PDF, JPG or PNG, up to 10 MB. Only accepted sellers can download it."
+        />
       </div>
 
       <div className="space-y-2">

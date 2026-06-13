@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
-export function AcceptInviteForm({ companyName }: { companyName: string }) {
+export function AcceptInviteForm({ tokenHash, type }: { tokenHash: string; type: string }) {
   const [state, action] = useFormState<AcceptState, FormData>(acceptInviteAction, null);
 
   return (
@@ -19,8 +19,10 @@ export function AcceptInviteForm({ companyName }: { companyName: string }) {
           <AlertDescription>{state.error}</AlertDescription>
         </Alert>
       ) : null}
+      <input type="hidden" name="token_hash" value={tokenHash} />
+      <input type="hidden" name="type" value={type} />
       <p className="text-sm text-muted-foreground">
-        You&apos;ve been invited to <strong>{companyName}</strong>. Set a password to finish.
+        You&apos;ve been invited to join your company. Set a password to finish.
       </p>
       <div className="space-y-2">
         <Label htmlFor="password">Create a password</Label>

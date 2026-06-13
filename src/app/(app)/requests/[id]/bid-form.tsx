@@ -7,6 +7,7 @@ import { PAYMENT_TERMS_LABEL, UNIT_LABEL, formatRate } from '@/lib/format';
 import { SubmitButton } from '@/components/submit-button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { FileDropzone } from '@/components/ui/file-dropzone';
 import { Select } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -157,8 +158,8 @@ export function BidForm({
         </div>
         {!coaOnDispatch ? (
           <div className="space-y-1">
-            <Label htmlFor="coaFile">Certificate of Analysis (PDF/JPG/PNG)</Label>
-            <Input id="coaFile" name="coaFile" type="file" accept="application/pdf,image/jpeg,image/png" />
+            <Label htmlFor="coaFile">Certificate of Analysis</Label>
+            <FileDropzone id="coaFile" name="coaFile" accept="application/pdf,image/jpeg,image/png" hint="PDF, JPG or PNG" />
             {initial.hasCoa ? (
               <p className="text-xs text-muted-foreground">A COA is already attached — upload again to replace it.</p>
             ) : null}
