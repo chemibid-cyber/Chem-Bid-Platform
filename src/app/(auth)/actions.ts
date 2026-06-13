@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { eq } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { companies, users, serviceProviderProfiles } from '@/lib/db/schema';
+import type { EmailOtpType } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { createServiceClient } from '@/lib/supabase/service';
 import { getGstProvider, type GstVerificationResult } from '@/lib/gst';
@@ -237,16 +238,19 @@ export async function requestResetAction(
   const email = String(formData.get('email') ?? '');
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? '';
 
-  // Generate a recovery link and deliver via Resend (keeps email on one vendor).
+  // Generate a recovery token and deliver via Resend (keeps email on one vendor).
+  // We email a link to OUR OWN /reset-password page carrying the one-time
+  // `token_hash` — NOT Supabase's /auth/v1/verify action_link. The token is only
+  // consumed when the user submits the form (see updatePasswordAction), so inbox
+  // link-scanners (Gmail/Outlook) that pre-fetch the URL can't burn it first.
   try {
     const svc = createServiceClient();
-    const { data, error } = await svc.auth.admin.generateLink({
-      type: 'recovery',
-      email,
-      options: { redirectTo: `${appUrl}/auth/callback?next=/reset-password` },
-    });
-    if (!error && data.properties?.action_link) {
-      const tmpl = resetPasswordEmail({ resetUrl: data.properties.action_link });
+    const { data, error } = await svc.auth.admin.generateLink({ type: 'recovery', email });
+    if (!error && data.properties?.hashed_token) {
+      const resetUrl = `${appUrl}/reset-password?token_hash=${encodeURIComponent(
+        data.properties.hashed_token,
+      )}&type=recovery`;
+      const tmpl = resetPasswordEmail({ resetUrl });
       await sendEmail({ to: email, subject: tmpl.subject, html: tmpl.html, text: tmpl.text });
     }
   } catch {
@@ -261,10 +265,22 @@ export async function updatePasswordAction(
   formData: FormData,
 ): Promise<AuthFormState> {
   const password = String(formData.get('password') ?? '');
+  const tokenHash = String(formData.get('token_hash') ?? '');
+  const otpType = (String(formData.get('type') ?? 'recovery') || 'recovery') as EmailOtpType;
   const pw = validatePassword(password);
   if (!pw.ok) return { error: pw.errors.join(' ') };
 
   const supabase = createClient();
+
+  // Verify the one-time recovery token NOW (on submit) — not on page load — so an
+  // email link-scanner that merely opened the link can't have consumed it first.
+  if (tokenHash) {
+    const { error: verr } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type: otpType });
+    if (verr) {
+      return { error: 'Your reset link is invalid or has expired. Request a new one.' };
+    }
+  }
+
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return { error: 'Your reset link has expired. Request a new one.' };
 
