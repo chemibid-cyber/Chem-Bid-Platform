@@ -58,6 +58,19 @@ export function resetPasswordEmail(opts: { resetUrl: string }): Tmpl {
   };
 }
 
+export function otpEmail(opts: { code: string }): Tmpl {
+  return {
+    subject: `${opts.code} is your ${APP} verification code`,
+    html: layout(
+      'Verify your email',
+      `<p>Enter this code to verify your email address. It expires in 10 minutes.</p>
+       <p style="font-size:30px;font-weight:700;letter-spacing:6px;margin:18px 0">${opts.code}</p>
+       <p style="color:#64748b;font-size:13px">If you didn't request this, you can safely ignore this email.</p>`,
+    ),
+    text: `Your ${APP} verification code is ${opts.code} (expires in 10 minutes).`,
+  };
+}
+
 export function partnerRegisteredEmail(opts: {
   buyerName: string;
   cas: string;

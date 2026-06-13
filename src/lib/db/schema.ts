@@ -80,6 +80,8 @@ export const serviceQuoteStatusEnum = pgEnum('service_quote_status', [
   'declined',
 ]);
 export const packingConditionEnum = pgEnum('packing_condition', ['new', 'used', 'other']);
+// ── Contact verification (email + phone OTP) ──────────────────────────────────
+export const otpChannelEnum = pgEnum('otp_channel', ['email', 'phone']);
 
 // ── companies ────────────────────────────────────────────────────────────────
 export const companies = pgTable('companies', {
@@ -106,7 +108,9 @@ export const users = pgTable('users', {
   firstName: text('first_name').notNull(),
   lastName: text('last_name').notNull(),
   email: text('email').notNull().unique(),
+  emailVerifiedAt: timestamp('email_verified_at', { withTimezone: true }),
   phone: text('phone'),
+  phoneVerifiedAt: timestamp('phone_verified_at', { withTimezone: true }),
   designation: text('designation'),
   team: text('team'), // replaces the killed "department" concept
   canBuy: boolean('can_buy').notNull().default(false),
@@ -496,6 +500,36 @@ export const serviceQuotes = pgTable(
   }),
 );
 
+// ── otp_codes (contact verification — email + phone OTP) ──────────────────────
+// Service-role only (RLS default-deny): a logged-in user must NEVER read its own
+// code_hash via PostgREST. Codes are HMAC-hashed (server pepper), single-use,
+// short-TTL, attempt-capped. Rate limits are enforced by querying created_at
+// windows here (the in-memory limiter can't gate cost across Vercel lambdas).
+export const otpCodes = pgTable(
+  'otp_codes',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    channel: otpChannelEnum('channel').notNull(),
+    destination: text('destination').notNull(), // email address, or +91 E.164 phone
+    codeHash: text('code_hash').notNull(), // HMAC-SHA256(code, OTP_HMAC_SECRET)
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    attempts: integer('attempts').notNull().default(0),
+    consumedAt: timestamp('consumed_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (t) => ({
+    byUserChannelCreated: index('otp_user_channel_created_idx').on(
+      t.userId,
+      t.channel,
+      t.createdAt,
+    ),
+    byDestinationCreated: index('otp_destination_created_idx').on(t.destination, t.createdAt),
+  }),
+);
+
 // ── Inferred types ────────────────────────────────────────────────────────────
 export type Company = typeof companies.$inferSelect;
 export type NewCompany = typeof companies.$inferInsert;
@@ -521,3 +555,5 @@ export type ServiceProviderProfile = typeof serviceProviderProfiles.$inferSelect
 export type ServiceRequest = typeof serviceRequests.$inferSelect;
 export type NewServiceRequest = typeof serviceRequests.$inferInsert;
 export type ServiceQuote = typeof serviceQuotes.$inferSelect;
+export type OtpCode = typeof otpCodes.$inferSelect;
+export type NewOtpCode = typeof otpCodes.$inferInsert;

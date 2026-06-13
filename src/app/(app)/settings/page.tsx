@@ -2,9 +2,10 @@ import { requireUser } from '@/lib/auth/session';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { ComingSoonBadge } from '@/components/ui/coming-soon';
 import { formatIST } from '@/lib/format';
+import { isSmsLive } from '@/lib/sms';
 import { GstRefreshForm } from './refresh-form';
+import { VerifyPanel } from './verify-panel';
 
 export const metadata = { title: 'Company & profile' };
 
@@ -89,18 +90,21 @@ export default async function SettingsPage() {
       </Card>
 
       <Card>
-        <CardHeader className="flex-row items-start justify-between space-y-0">
-          <div>
-            <CardTitle className="text-lg">Security</CardTitle>
-            <CardDescription>Extra account protection.</CardDescription>
-          </div>
-          <ComingSoonBadge />
+        <CardHeader>
+          <CardTitle className="text-lg">Verify contact details</CardTitle>
+          <CardDescription>
+            Confirm your email and phone with a one-time code, so notifications and account
+            recovery reliably reach you.
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <ul className="space-y-2 text-sm text-muted-foreground">
-            <li>Two-factor authentication (OTP) at login</li>
-            <li>Mobile push for urgent counter-offers and closing auctions</li>
-          </ul>
+          <VerifyPanel
+            email={user.email}
+            emailVerified={!!user.emailVerifiedAt}
+            phone={user.phone ?? ''}
+            phoneVerified={!!user.phoneVerifiedAt}
+            smsLive={isSmsLive()}
+          />
         </CardContent>
       </Card>
     </div>
