@@ -139,13 +139,18 @@ export function VerifyPanel(props: {
   return (
     <div className="space-y-3">
       <ChannelRow channel="email" label="Email" value={props.email} verified={props.emailVerified} smsLive />
-      <ChannelRow
-        channel="phone"
-        label="Phone"
-        value={props.phone}
-        verified={props.phoneVerified}
-        smsLive={props.smsLive}
-      />
+      {/* Phone verification is hidden until a real SMS provider is configured
+          (SMS_PROVIDER != mock). India SMS OTP needs DLT registration first; until
+          then we only surface email. Flip on by setting SMS_PROVIDER + key in Vercel. */}
+      {props.smsLive ? (
+        <ChannelRow
+          channel="phone"
+          label="Phone"
+          value={props.phone}
+          verified={props.phoneVerified}
+          smsLive={props.smsLive}
+        />
+      ) : null}
     </div>
   );
 }

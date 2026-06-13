@@ -93,8 +93,8 @@ export default async function SettingsPage() {
         <CardHeader>
           <CardTitle className="text-lg">Verify contact details</CardTitle>
           <CardDescription>
-            Confirm your email and phone with a one-time code, so notifications and account
-            recovery reliably reach you.
+            Confirm your email with a one-time code, so notifications and account recovery
+            reliably reach you.
           </CardDescription>
         </CardHeader>
         <CardContent>
