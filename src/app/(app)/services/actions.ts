@@ -3,7 +3,7 @@
 import { z } from 'zod';
 import { redirect } from 'next/navigation';
 import { revalidatePath } from 'next/cache';
-import { and, eq, ne } from 'drizzle-orm';
+import { and, eq, ne, gt, isNull } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import {
   serviceProviderProfiles,
@@ -15,6 +15,7 @@ import {
   type ServiceRequest,
 } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/session';
+import { canAccessOwned } from '@/lib/auth/scope';
 import { recordAudit, AuditAction } from '@/lib/audit';
 import { sendEmail } from '@/lib/email';
 import { serviceInquiryEmail, serviceQuoteEmail, serviceAcceptedEmail } from '@/lib/email/templates';
@@ -169,6 +170,33 @@ export async function createTransportRequestAction(
     }
   }
 
+  const materialName = data.materialName.trim();
+  const pickupAddress = data.pickupAddress.trim();
+  const dropAddress = data.dropAddress.trim();
+
+  // #39 server-side duplicate prevention: reject an identical OPEN transport
+  // inquiry from the same needer+user posted in the last ~5 minutes (e.g. a
+  // double-submit or impatient re-click). Defining fields: material + gross qty
+  // + pickup + drop. Complements the client SubmitButton guard.
+  const [dupe] = await db
+    .select({ id: serviceRequests.id })
+    .from(serviceRequests)
+    .where(
+      and(
+        eq(serviceRequests.neederCompanyId, company.id),
+        eq(serviceRequests.neederUserId, user.id),
+        eq(serviceRequests.kind, 'transport'),
+        eq(serviceRequests.status, 'open'),
+        eq(serviceRequests.materialName, materialName),
+        eq(serviceRequests.totalQtyKg, String(totalQty)),
+        eq(serviceRequests.pickupAddress, pickupAddress),
+        eq(serviceRequests.dropAddress, dropAddress),
+        gt(serviceRequests.createdAt, new Date(Date.now() - 5 * 60 * 1000)),
+      ),
+    )
+    .limit(1);
+  if (dupe) return { error: 'You just posted an identical request — check your open inquiries.' };
+
   const [request] = await db
     .insert(serviceRequests)
     .values({
@@ -177,12 +205,12 @@ export async function createTransportRequestAction(
       neederUserId: user.id,
       paymentTerms: data.paymentTerms,
       description: data.description?.trim() || null,
-      materialName: data.materialName.trim(),
+      materialName,
       totalQtyKg: String(totalQty),
       lotQtyKg: lotQty != null ? String(lotQty) : null,
       vehicleTypes,
-      pickupAddress: data.pickupAddress.trim(),
-      dropAddress: data.dropAddress.trim(),
+      pickupAddress,
+      dropAddress,
       pickupPlaceId: data.pickupPlaceId?.trim() || null,
       dropPlaceId: data.dropPlaceId?.trim() || null,
     })
@@ -231,6 +259,31 @@ export async function createPackingRequestAction(
     return { error: 'Quantity must be a whole number of pieces, greater than 0.' };
   }
 
+  const materialSpec = data.materialSpec?.trim() || null;
+
+  // #39 server-side duplicate prevention: reject an identical OPEN packing
+  // inquiry from the same needer+user posted in the last ~5 minutes. Defining
+  // fields: packing type + piece count + spec. Complements the client guard.
+  const [dupe] = await db
+    .select({ id: serviceRequests.id })
+    .from(serviceRequests)
+    .where(
+      and(
+        eq(serviceRequests.neederCompanyId, company.id),
+        eq(serviceRequests.neederUserId, user.id),
+        eq(serviceRequests.kind, 'packing'),
+        eq(serviceRequests.status, 'open'),
+        eq(serviceRequests.packingType, data.packingType),
+        eq(serviceRequests.quantityPieces, pieces),
+        materialSpec === null
+          ? isNull(serviceRequests.materialSpec)
+          : eq(serviceRequests.materialSpec, materialSpec),
+        gt(serviceRequests.createdAt, new Date(Date.now() - 5 * 60 * 1000)),
+      ),
+    )
+    .limit(1);
+  if (dupe) return { error: 'You just posted an identical request — check your open inquiries.' };
+
   const [request] = await db
     .insert(serviceRequests)
     .values({
@@ -242,7 +295,7 @@ export async function createPackingRequestAction(
       packingType: data.packingType,
       condition: data.condition,
       quantityPieces: pieces,
-      materialSpec: data.materialSpec?.trim() || null,
+      materialSpec,
       weightPerPiece: data.weightPerPiece?.trim() || null,
       logisticsBasis: data.logisticsBasis,
     })
@@ -318,6 +371,7 @@ export async function cancelServiceRequestAction(requestId: string): Promise<Ser
     .where(and(eq(serviceRequests.id, requestId), eq(serviceRequests.neederCompanyId, company.id)))
     .limit(1);
   if (!request) return { error: 'Inquiry not found.' };
+  if (!canAccessOwned(request.neederUserId, user)) return { error: 'Inquiry not found.' };
   if (request.status !== 'open') return { error: 'Only an open inquiry can be cancelled.' };
 
   await db.update(serviceRequests).set({ status: 'cancelled' }).where(eq(serviceRequests.id, requestId));
@@ -519,6 +573,7 @@ export async function acceptServiceQuoteAction(
     .where(and(eq(serviceRequests.id, requestId), eq(serviceRequests.neederCompanyId, company.id)))
     .limit(1);
   if (!request) return { error: 'Inquiry not found.' };
+  if (!canAccessOwned(request.neederUserId, user)) return { error: 'Inquiry not found.' };
   if (request.status !== 'open') return { error: 'This inquiry is no longer open.' };
 
   const [quote] = await db

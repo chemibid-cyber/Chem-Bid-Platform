@@ -15,7 +15,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   const current = await getCurrentUser();
   if (!current) return new Response('Unauthorized', { status: 401 });
 
-  const data = await getAuctionExportData(params.id, current.company.id);
+  const data = await getAuctionExportData(params.id, current.company.id, current.user);
   if (!data) return new Response('Not found', { status: 404 });
 
   const { searchParams } = new URL(req.url);

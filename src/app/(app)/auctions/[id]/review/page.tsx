@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation';
 import { and, eq, asc, isNotNull, inArray } from 'drizzle-orm';
 import { Building2 } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
+import { canAccessOwned } from '@/lib/auth/scope';
 import { db } from '@/lib/db';
 import { auctions, bids, companies, users, blocks, deals, counterProposals } from '@/lib/db/schema';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -36,7 +37,7 @@ export default async function ReviewPage({
   params: { id: string };
   searchParams: { confirmed?: string };
 }) {
-  const { company } = await requireUser();
+  const { user, company } = await requireUser();
 
   const [auction] = await db
     .select()
@@ -44,6 +45,8 @@ export default async function ReviewPage({
     .where(and(eq(auctions.id, params.id), eq(auctions.buyerCompanyId, company.id)))
     .limit(1);
   if (!auction) notFound();
+  // Member-level isolation (#42): a member reviews only auctions they created; admins see all.
+  if (!canAccessOwned(auction.buyerUserId, user)) notFound();
   if (auction.status === 'active') redirect(`/auctions/${auction.id}`);
 
   const rows = await db

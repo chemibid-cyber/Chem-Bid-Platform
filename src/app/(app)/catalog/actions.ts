@@ -7,6 +7,7 @@ import { and, eq, inArray } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { catalogItems, users, auctions, bids, notifications } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/session';
+import { canAccessOwned } from '@/lib/auth/scope';
 import { getActiveMode } from '@/lib/auth/mode';
 import { resolveCas } from '@/lib/cas/resolver';
 import { isValidCasFormat, type CasResolution } from '@/lib/cas/parse';
@@ -280,6 +281,7 @@ export async function delistCatalogItemAction(itemId: string): Promise<CatalogFo
     .where(and(eq(catalogItems.id, itemId), eq(catalogItems.companyId, user.companyId)))
     .limit(1);
   if (!item) return { error: 'Item not found.' };
+  if (!canAccessOwned(item.ownerUserId, user)) return { error: 'Item not found.' };
 
   if (item.casNumber) {
     // Live buyer auctions for this CAS by this company.

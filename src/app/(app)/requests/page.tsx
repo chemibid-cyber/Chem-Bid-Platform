@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { eq, and, desc } from 'drizzle-orm';
 import { Inbox } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
+import { ownerScope } from '@/lib/auth/scope';
 import { db } from '@/lib/db';
 import { auctions, bids } from '@/lib/db/schema';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,7 +15,7 @@ import { formatIST, timeRemaining, UNIT_LABEL } from '@/lib/format';
 export const metadata = { title: 'Requests' };
 
 export default async function RequestsPage() {
-  const { company } = await requireUser();
+  const { user, company } = await requireUser();
 
   const rows = await db
     .select({
@@ -32,7 +33,7 @@ export default async function RequestsPage() {
     })
     .from(bids)
     .innerJoin(auctions, eq(bids.auctionId, auctions.id))
-    .where(and(eq(bids.sellerCompanyId, company.id)))
+    .where(and(eq(bids.sellerCompanyId, company.id), ownerScope(bids.sellerUserId, user)))
     .orderBy(desc(auctions.createdAt));
 
   const isActive = (s: string) => s === 'active';

@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { and, eq, desc, ne, inArray } from 'drizzle-orm';
 import { Truck, Package2, Wrench, History, ArrowRight } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
+import { ownerScope } from '@/lib/auth/scope';
 import { db } from '@/lib/db';
 import { serviceProviderProfiles, serviceRequests, serviceQuotes } from '@/lib/db/schema';
 import { Card, CardContent } from '@/components/ui/card';
@@ -74,10 +75,17 @@ export default async function ServicesPage() {
     .limit(1);
 
   // My open inquiries (as needer), with quote counts.
+  // #41 member isolation: a member sees only their own company needs; admins see all.
   const mine = await db
     .select()
     .from(serviceRequests)
-    .where(and(eq(serviceRequests.neederCompanyId, company.id), eq(serviceRequests.status, 'open')))
+    .where(
+      and(
+        eq(serviceRequests.neederCompanyId, company.id),
+        eq(serviceRequests.status, 'open'),
+        ownerScope(serviceRequests.neederUserId, user),
+      ),
+    )
     .orderBy(desc(serviceRequests.createdAt));
 
   const counts = new Map<string, number>();

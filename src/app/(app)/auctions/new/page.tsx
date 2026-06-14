@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { and, eq, asc } from 'drizzle-orm';
 import { requireUser } from '@/lib/auth/session';
+import { ownerScope } from '@/lib/auth/scope';
 import { db } from '@/lib/db';
 import { auctions, catalogItems } from '@/lib/db/schema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -61,6 +62,8 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: {
         eq(catalogItems.companyId, company.id),
         eq(catalogItems.profileType, 'purchase'),
         eq(catalogItems.delisted, false),
+        // Member-level isolation (#40): the picker offers only the member's own purchase items; admins see all.
+        ownerScope(catalogItems.ownerUserId, user),
       ),
     )
     .orderBy(asc(catalogItems.name));

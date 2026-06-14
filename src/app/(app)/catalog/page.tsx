@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { and, eq, desc } from 'drizzle-orm';
 import { Plus, Package } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
+import { ownerScope } from '@/lib/auth/scope';
 import { getActiveMode } from '@/lib/auth/mode';
 import { db } from '@/lib/db';
 import { catalogItems, users } from '@/lib/db/schema';
@@ -45,7 +46,14 @@ export default async function CatalogPage({
     })
     .from(catalogItems)
     .innerJoin(users, eq(catalogItems.ownerUserId, users.id))
-    .where(and(eq(catalogItems.companyId, user.companyId), eq(catalogItems.profileType, profileType)))
+    .where(
+      and(
+        eq(catalogItems.companyId, user.companyId),
+        eq(catalogItems.profileType, profileType),
+        // Member-level isolation (#40): a member sees only their own catalog items; admins see all.
+        ownerScope(catalogItems.ownerUserId, user),
+      ),
+    )
     .orderBy(desc(catalogItems.createdAt));
 
   return (

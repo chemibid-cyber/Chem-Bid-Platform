@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { and, eq, desc, ne, inArray } from 'drizzle-orm';
 import { History, Truck, Package2 } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
+import { ownerScope } from '@/lib/auth/scope';
 import { db } from '@/lib/db';
 import { serviceRequests, serviceQuotes, companies } from '@/lib/db/schema';
 import { Card, CardContent } from '@/components/ui/card';
@@ -27,13 +28,20 @@ function summary(r: typeof serviceRequests.$inferSelect): string {
 }
 
 export default async function ServiceHistoryPage() {
-  const { company } = await requireUser();
+  const { user, company } = await requireUser();
 
   // As needer: every non-open inquiry (the permanent audit folder).
+  // #41 member isolation: a member sees only their own; admins see all company history.
   const asNeeder = await db
     .select()
     .from(serviceRequests)
-    .where(and(eq(serviceRequests.neederCompanyId, company.id), ne(serviceRequests.status, 'open')))
+    .where(
+      and(
+        eq(serviceRequests.neederCompanyId, company.id),
+        ne(serviceRequests.status, 'open'),
+        ownerScope(serviceRequests.neederUserId, user),
+      ),
+    )
     .orderBy(desc(serviceRequests.createdAt));
 
   // As provider: every request we quoted (any terminal state).

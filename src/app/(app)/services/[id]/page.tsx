@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { and, eq, inArray } from 'drizzle-orm';
 import { Building2, Truck, Package2, Wrench } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
+import { canAccessOwned } from '@/lib/auth/scope';
 import { db } from '@/lib/db';
 import {
   serviceRequests,
@@ -85,7 +86,7 @@ export default async function ServiceRequestPage({
   params: { id: string };
   searchParams: { published?: string };
 }) {
-  const { company } = await requireUser();
+  const { user, company } = await requireUser();
 
   const [request] = await db
     .select()
@@ -96,6 +97,11 @@ export default async function ServiceRequestPage({
 
   const isNeeder = request.neederCompanyId === company.id;
   const open = request.status === 'open';
+
+  // #41 member isolation: within the needer company, a non-admin member can only
+  // open inquiries they created. Providers from OTHER companies keep the open
+  // marketplace view (the gate applies only when this viewer is the needer).
+  if (isNeeder && !canAccessOwned(request.neederUserId, user)) notFound();
 
   // OPEN IDENTITY: the needer's full corporate footprint is visible to everyone
   // who can see the inquiry — that's the module's core design.

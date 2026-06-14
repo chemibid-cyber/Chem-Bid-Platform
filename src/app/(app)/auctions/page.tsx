@@ -1,7 +1,8 @@
 import Link from 'next/link';
-import { eq, desc, sql } from 'drizzle-orm';
+import { and, eq, desc, sql } from 'drizzle-orm';
 import { Plus, FileText } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
+import { ownerScope } from '@/lib/auth/scope';
 import { db } from '@/lib/db';
 import { auctions, bids } from '@/lib/db/schema';
 import { Card, CardContent } from '@/components/ui/card';
@@ -21,7 +22,7 @@ const GROUPS: { title: string; statuses: string[] }[] = [
 ];
 
 export default async function AuctionsPage() {
-  const { company } = await requireUser();
+  const { user, company } = await requireUser();
 
   const rows = await db
     .select({
@@ -37,7 +38,7 @@ export default async function AuctionsPage() {
       bidCount: sql<number>`(select count(*) from ${bids} where ${bids.auctionId} = ${auctions.id} and ${bids.status} <> 'withdrawn' and ${bids.stage1Total} is not null)`,
     })
     .from(auctions)
-    .where(eq(auctions.buyerCompanyId, company.id))
+    .where(and(eq(auctions.buyerCompanyId, company.id), ownerScope(auctions.buyerUserId, user)))
     .orderBy(desc(auctions.createdAt));
 
   return (

@@ -2,6 +2,7 @@ import { and, eq, isNotNull, asc } from 'drizzle-orm';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
 import { db } from '@/lib/db';
 import { auctions, bids, companies } from '@/lib/db/schema';
+import { canAccessOwned } from '@/lib/auth/scope';
 import { effectiveTotal } from '@/lib/ranking';
 import { stage2Total } from '@/lib/pricing';
 import { UNIT_LABEL, PAYMENT_TERMS_LABEL } from '@/lib/format';
@@ -29,15 +30,24 @@ export interface ExportData {
   rows: ExportRow[];
 }
 
-/** Returns export data scoped to the viewer (buyer sees all; a seller sees only their row). */
+/**
+ * Returns export data scoped to the viewer (buyer sees all; a seller sees only their row).
+ *
+ * Member isolation: a non-admin requester on the buyer side may export ONLY an
+ * auction THEY own. Admins see every auction company-wide; the participating-seller
+ * path (a seller pulling their own bid row) is unchanged.
+ */
 export async function getAuctionExportData(
   auctionId: string,
   companyId: string,
+  user: { id: string; isAdmin: boolean },
 ): Promise<ExportData | null> {
   const [auction] = await db.select().from(auctions).where(eq(auctions.id, auctionId)).limit(1);
   if (!auction) return null;
 
-  const isBuyer = auction.buyerCompanyId === companyId;
+  // Buyer-side access requires both the company match AND member ownership (admins pass).
+  const isBuyer =
+    auction.buyerCompanyId === companyId && canAccessOwned(auction.buyerUserId, user);
 
   const all = await db
     .select({

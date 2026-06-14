@@ -17,6 +17,7 @@ import {
   counterProposals,
 } from '@/lib/db/schema';
 import { requireUser } from '@/lib/auth/session';
+import { canAccessOwned } from '@/lib/auth/scope';
 import { isValidCasFormat } from '@/lib/cas/parse';
 import { validateClosingTime, validateExtension, stage2CloseTime } from '@/lib/auction/timing';
 import { istLocalToDate, PAYMENT_TERMS_LABEL } from '@/lib/format';
@@ -257,6 +258,7 @@ export async function extendAuctionAction(
     .where(and(eq(auctions.id, auctionId), eq(auctions.buyerCompanyId, company.id)))
     .limit(1);
   if (!auction) return { error: 'Auction not found.' };
+  if (!canAccessOwned(auction.buyerUserId, user)) return { error: 'Auction not found.' };
   if (auction.extendedOnce) return { error: 'This auction has already been extended once.' };
   if (auction.status !== 'active') return { error: 'Only an active auction can be extended.' };
 
@@ -286,6 +288,7 @@ export async function cancelAuctionAction(auctionId: string): Promise<AuctionFor
     .where(and(eq(auctions.id, auctionId), eq(auctions.buyerCompanyId, company.id)))
     .limit(1);
   if (!auction) return { error: 'Auction not found.' };
+  if (!canAccessOwned(auction.buyerUserId, user)) return { error: 'Auction not found.' };
   if (!['active', 'awaiting_decision'].includes(auction.status)) {
     return { error: 'This auction can no longer be cancelled.' };
   }
@@ -319,13 +322,14 @@ export async function cancelAuctionAction(auctionId: string): Promise<AuctionFor
 
 /** Clone & relist a past auction (FR-8.2 zero-bid retention). */
 export async function cloneAuctionAction(auctionId: string): Promise<AuctionFormState> {
-  const { company } = await requireUser();
+  const { user, company } = await requireUser();
   const [src] = await db
-    .select({ id: auctions.id })
+    .select({ id: auctions.id, buyerUserId: auctions.buyerUserId })
     .from(auctions)
     .where(and(eq(auctions.id, auctionId), eq(auctions.buyerCompanyId, company.id)))
     .limit(1);
   if (!src) return { error: 'Auction not found.' };
+  if (!canAccessOwned(src.buyerUserId, user)) return { error: 'Auction not found.' };
 
   // The new-auction form prefills from the clone source; the buyer re-confirms timing.
   redirect(`/auctions/new?clone=${auctionId}`);
@@ -335,13 +339,18 @@ export async function cloneAuctionAction(auctionId: string): Promise<AuctionForm
 export async function getAuctionSpecUrlAction(
   auctionId: string,
 ): Promise<{ url?: string; error?: string }> {
-  const { company } = await requireUser();
+  const { user, company } = await requireUser();
   const [a] = await db
-    .select({ specFileUrl: auctions.specFileUrl, buyerCompanyId: auctions.buyerCompanyId })
+    .select({
+      specFileUrl: auctions.specFileUrl,
+      buyerCompanyId: auctions.buyerCompanyId,
+      buyerUserId: auctions.buyerUserId,
+    })
     .from(auctions)
     .where(eq(auctions.id, auctionId))
     .limit(1);
   if (!a || a.buyerCompanyId !== company.id) return { error: 'Not found.' };
+  if (!canAccessOwned(a.buyerUserId, user)) return { error: 'Not found.' };
   if (!a.specFileUrl) return { error: 'No spec file attached.' };
   const url = await signedUrl(a.specFileUrl);
   return url ? { url } : { error: 'Could not generate a download link.' };
@@ -363,6 +372,7 @@ export async function launchStage2Action(
     .where(and(eq(auctions.id, auctionId), eq(auctions.buyerCompanyId, company.id)))
     .limit(1);
   if (!auction) return { error: 'Auction not found.' };
+  if (!canAccessOwned(auction.buyerUserId, user)) return { error: 'Auction not found.' };
   if (auction.status !== 'awaiting_decision') {
     return { error: 'Stage-2 can only start after the auction closes with bids.' };
   }
@@ -457,6 +467,7 @@ export async function confirmDealAction(
     .where(and(eq(auctions.id, auctionId), eq(auctions.buyerCompanyId, company.id)))
     .limit(1);
   if (!auction) return { error: 'Auction not found.' };
+  if (!canAccessOwned(auction.buyerUserId, user)) return { error: 'Auction not found.' };
   if (auction.status !== 'awaiting_decision') return { error: 'This auction is not awaiting a decision.' };
 
   const [winner] = await db
@@ -563,6 +574,7 @@ export async function blockSellerAction(
     .where(and(eq(auctions.id, auctionId), eq(auctions.buyerCompanyId, company.id)))
     .limit(1);
   if (!auction) return { error: 'Auction not found.' };
+  if (!canAccessOwned(auction.buyerUserId, user)) return { error: 'Auction not found.' };
 
   if (scope !== 'this_cas' && scope !== 'all') return { error: 'Invalid block scope.' };
   if (durationMonths != null && (!Number.isInteger(durationMonths) || durationMonths <= 0)) {
@@ -630,12 +642,14 @@ export async function respondToCounterProposalAction(
       proposal: counterProposals,
       auctionName: auctions.name,
       buyerCompanyId: auctions.buyerCompanyId,
+      buyerUserId: auctions.buyerUserId,
     })
     .from(counterProposals)
     .innerJoin(auctions, eq(counterProposals.auctionId, auctions.id))
     .where(eq(counterProposals.id, proposalId))
     .limit(1);
   if (!row || row.buyerCompanyId !== company.id) return { error: 'Proposal not found.' };
+  if (!canAccessOwned(row.buyerUserId, user)) return { error: 'Proposal not found.' };
   if (row.proposal.status !== 'pending') return { error: 'This proposal has already been answered.' };
 
   const note = responseNote?.trim() || null;

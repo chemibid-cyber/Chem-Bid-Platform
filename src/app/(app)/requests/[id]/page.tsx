@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { and, eq, desc } from 'drizzle-orm';
 import { Lock, Building2 } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
+import { canAccessOwned } from '@/lib/auth/scope';
 import { db } from '@/lib/db';
 import { auctions, bids, companies, users, deals, counterProposals } from '@/lib/db/schema';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,7 +44,7 @@ function Detail({ label, value }: { label: string; value: string }) {
 }
 
 export default async function RequestDetailPage({ params }: { params: { id: string } }) {
-  const { company } = await requireUser();
+  const { user, company } = await requireUser();
 
   const [auction] = await db.select().from(auctions).where(eq(auctions.id, params.id)).limit(1);
   if (!auction) notFound();
@@ -54,6 +55,8 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
     .where(and(eq(bids.auctionId, params.id), eq(bids.sellerCompanyId, company.id)))
     .limit(1);
   if (!bid) notFound(); // not invited to this requirement
+  // #42 member isolation: a member sees only requests assigned to them; admins see all.
+  if (!canAccessOwned(bid.sellerUserId, user)) notFound();
 
   const accepted = bid.gateState === 'accepted';
   const open = auction.status === 'active';

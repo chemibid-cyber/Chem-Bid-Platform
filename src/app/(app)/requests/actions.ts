@@ -12,6 +12,7 @@ import { rankOf } from '@/lib/ranking';
 import { uploadFile, signedUrl } from '@/lib/storage';
 import { istLocalToDate } from '@/lib/format';
 import { recordAudit, AuditAction } from '@/lib/audit';
+import { canAccessOwned } from '@/lib/auth/scope';
 
 export type BidFormState = { error?: string; success?: string } | null;
 
@@ -29,10 +30,14 @@ export async function acceptRequestAction(auctionId: string): Promise<BidFormSta
   if (!user.canSell && !user.isAdmin) return { error: 'You need sell capability to quote.' };
   const bid = await loadSellerBid(auctionId, company.id);
   if (!bid) return { error: 'You were not invited to this requirement.' };
+  if (!canAccessOwned(bid.sellerUserId, user)) return { error: 'Request not found.' };
 
+  // Do NOT reassign sellerUserId to the caller: the targeted member (the
+  // catalog-item owner) remains the owner. An admin accepting on their behalf
+  // must not transfer ownership of the request.
   await db
     .update(bids)
-    .set({ gateState: 'accepted', sellerUserId: user.id, updatedAt: new Date() })
+    .set({ gateState: 'accepted', updatedAt: new Date() })
     .where(eq(bids.id, bid.id));
   await recordAudit({
     actorUserId: user.id,
@@ -49,6 +54,7 @@ export async function ignoreRequestAction(auctionId: string): Promise<BidFormSta
   const { user, company } = await requireUser();
   const bid = await loadSellerBid(auctionId, company.id);
   if (!bid) return { error: 'Request not found.' };
+  if (!canAccessOwned(bid.sellerUserId, user)) return { error: 'Request not found.' };
   await db.update(bids).set({ gateState: 'ignored', updatedAt: new Date() }).where(eq(bids.id, bid.id));
   await recordAudit({
     actorUserId: user.id,
@@ -68,6 +74,7 @@ export async function unignoreRequestAction(auctionId: string): Promise<BidFormS
   const { user, company } = await requireUser();
   const bid = await loadSellerBid(auctionId, company.id);
   if (!bid) return { error: 'Request not found.' };
+  if (!canAccessOwned(bid.sellerUserId, user)) return { error: 'Request not found.' };
 
   // Only while the auction is still open.
   const [auction] = await db.select().from(auctions).where(eq(auctions.id, auctionId)).limit(1);
@@ -100,6 +107,10 @@ export async function blockPurchaserAction(
   const [auction] = await db.select().from(auctions).where(eq(auctions.id, auctionId)).limit(1);
   if (!auction) return { error: 'Auction not found.' };
 
+  const bid = await loadSellerBid(auctionId, company.id);
+  if (!bid) return { error: 'Request not found.' };
+  if (!canAccessOwned(bid.sellerUserId, user)) return { error: 'Request not found.' };
+
   // null durationMonths = permanent block; a positive count expires N months out. (#16)
   const expiresAt =
     durationMonths && Number.isFinite(durationMonths) && durationMonths > 0
@@ -114,10 +125,7 @@ export async function blockPurchaserAction(
     expiresAt,
   });
 
-  const bid = await loadSellerBid(auctionId, company.id);
-  if (bid) {
-    await db.update(bids).set({ gateState: 'blocked', updatedAt: new Date() }).where(eq(bids.id, bid.id));
-  }
+  await db.update(bids).set({ gateState: 'blocked', updatedAt: new Date() }).where(eq(bids.id, bid.id));
   await recordAudit({
     actorUserId: user.id,
     entityType: 'company',
@@ -174,6 +182,7 @@ export async function submitBidAction(_prev: BidFormState, formData: FormData): 
 
   const bid = await loadSellerBid(data.auctionId, company.id);
   if (!bid) return { error: 'You were not invited to this requirement.' };
+  if (!canAccessOwned(bid.sellerUserId, user)) return { error: 'Request not found.' };
   if (bid.gateState !== 'accepted') return { error: 'Accept the requirement before quoting.' };
 
   // #27: money/quantity values store at 2 decimals regardless of input. Round
@@ -243,6 +252,7 @@ export async function withdrawBidAction(auctionId: string): Promise<BidFormState
   const { user, company } = await requireUser();
   const bid = await loadSellerBid(auctionId, company.id);
   if (!bid) return { error: 'Bid not found.' };
+  if (!canAccessOwned(bid.sellerUserId, user)) return { error: 'Bid not found.' };
 
   const [auction] = await db.select().from(auctions).where(eq(auctions.id, auctionId)).limit(1);
   if (!auction || auction.status !== 'active') return { error: 'You can only withdraw before close.' };
@@ -317,6 +327,7 @@ export async function stage2RespondAction(
   const { user, company } = await requireUser();
   const bid = await loadSellerBid(auctionId, company.id);
   if (!bid || bid.stage1Total == null) return { error: 'You did not bid in Stage-1.' };
+  if (!canAccessOwned(bid.sellerUserId, user)) return { error: 'Request not found.' };
 
   const [auction] = await db.select().from(auctions).where(eq(auctions.id, auctionId)).limit(1);
   if (!auction || auction.stage !== 'stage2') return { error: 'Stage-2 is not active.' };
@@ -398,6 +409,7 @@ export async function counterProposeAction(
 
   const bid = await loadSellerBid(data.auctionId, company.id);
   if (!bid) return { error: 'You were not invited to this requirement.' };
+  if (!canAccessOwned(bid.sellerUserId, user)) return { error: 'Request not found.' };
   if (bid.gateState !== 'accepted') return { error: 'Accept the requirement before proposing changes.' };
 
   // Validity dates (optional) — if set, must be in the future and well-formed.
@@ -497,6 +509,9 @@ export async function withdrawCounterProposalAction(proposalId: string): Promise
     .where(eq(counterProposals.id, proposalId))
     .limit(1);
   if (!proposal || proposal.sellerCompanyId !== company.id) return { error: 'Proposal not found.' };
+  // Member gate: a non-admin may only withdraw a proposal tied to a bid THEY own.
+  const [proposalBid] = await db.select().from(bids).where(eq(bids.id, proposal.bidId)).limit(1);
+  if (!proposalBid || !canAccessOwned(proposalBid.sellerUserId, user)) return { error: 'Proposal not found.' };
   if (proposal.status !== 'pending') return { error: 'Only a pending proposal can be withdrawn.' };
 
   await db

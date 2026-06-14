@@ -16,6 +16,7 @@ import {
   Truck,
 } from 'lucide-react';
 import { requireUser } from '@/lib/auth/session';
+import { ownerScope } from '@/lib/auth/scope';
 import { getActiveMode, canToggleMode } from '@/lib/auth/mode';
 import { db } from '@/lib/db';
 import { auctions, bids, deals } from '@/lib/db/schema';
@@ -99,10 +100,12 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
   let stats: { href: string; label: string; value: number; tone?: 'brand' | 'warning' }[] = [];
   let attention: { id: string; title: string; sub: string; href: string }[] = [];
 
+  // Member-level isolation (#42): a member's dashboard counts only the auctions they
+  // created (ownerScope on auctions.buyerUserId); admins get full company-wide counts.
   if (isBuy) {
     const [active, awaiting, dealCount] = await Promise.all([
-      cnt(db.select({ value: count() }).from(auctions).where(and(eq(auctions.buyerCompanyId, company.id), eq(auctions.status, 'active')))),
-      cnt(db.select({ value: count() }).from(auctions).where(and(eq(auctions.buyerCompanyId, company.id), eq(auctions.status, 'awaiting_decision')))),
+      cnt(db.select({ value: count() }).from(auctions).where(and(eq(auctions.buyerCompanyId, company.id), ownerScope(auctions.buyerUserId, user), eq(auctions.status, 'active')))),
+      cnt(db.select({ value: count() }).from(auctions).where(and(eq(auctions.buyerCompanyId, company.id), ownerScope(auctions.buyerUserId, user), eq(auctions.status, 'awaiting_decision')))),
       cnt(db.select({ value: count() }).from(deals).where(eq(deals.buyerCompanyId, company.id))),
     ]);
     stats = [
@@ -113,7 +116,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
     const rows = await db
       .select({ id: auctions.id, name: auctions.name, quantity: auctions.quantity, unit: auctions.unit })
       .from(auctions)
-      .where(and(eq(auctions.buyerCompanyId, company.id), eq(auctions.status, 'awaiting_decision')))
+      .where(and(eq(auctions.buyerCompanyId, company.id), ownerScope(auctions.buyerUserId, user), eq(auctions.status, 'awaiting_decision')))
       .orderBy(desc(auctions.createdAt))
       .limit(5);
     attention = rows.map((r) => ({
@@ -123,16 +126,18 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
       href: `/auctions/${r.id}/review`,
     }));
   } else {
+    // Member-level isolation (#42): a member's seller dashboard counts only the bids
+    // THEY own (ownerScope on bids.sellerUserId); admins get full company-wide counts.
     const [newReq, quoting, won] = await Promise.all([
       cnt(
         db.select({ value: count() }).from(bids).innerJoin(auctions, eq(bids.auctionId, auctions.id))
-          .where(and(eq(bids.sellerCompanyId, company.id), eq(bids.gateState, 'notified'), eq(auctions.status, 'active'))),
+          .where(and(eq(bids.sellerCompanyId, company.id), ownerScope(bids.sellerUserId, user), eq(bids.gateState, 'notified'), eq(auctions.status, 'active'))),
       ),
       cnt(
         db.select({ value: count() }).from(bids).innerJoin(auctions, eq(bids.auctionId, auctions.id))
-          .where(and(eq(bids.sellerCompanyId, company.id), eq(bids.gateState, 'accepted'), isNotNull(bids.stage1Total), eq(auctions.status, 'active'))),
+          .where(and(eq(bids.sellerCompanyId, company.id), ownerScope(bids.sellerUserId, user), eq(bids.gateState, 'accepted'), isNotNull(bids.stage1Total), eq(auctions.status, 'active'))),
       ),
-      cnt(db.select({ value: count() }).from(bids).where(and(eq(bids.sellerCompanyId, company.id), eq(bids.status, 'won')))),
+      cnt(db.select({ value: count() }).from(bids).where(and(eq(bids.sellerCompanyId, company.id), ownerScope(bids.sellerUserId, user), eq(bids.status, 'won')))),
     ]);
     stats = [
       { href: '/requests', label: 'New requests', value: newReq, tone: 'warning' },
@@ -143,7 +148,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
       .select({ id: auctions.id, name: auctions.name, quantity: auctions.quantity, unit: auctions.unit, closesAt: auctions.closesAt })
       .from(bids)
       .innerJoin(auctions, eq(bids.auctionId, auctions.id))
-      .where(and(eq(bids.sellerCompanyId, company.id), eq(bids.gateState, 'notified'), eq(auctions.status, 'active')))
+      .where(and(eq(bids.sellerCompanyId, company.id), ownerScope(bids.sellerUserId, user), eq(bids.gateState, 'notified'), eq(auctions.status, 'active')))
       .orderBy(desc(auctions.createdAt))
       .limit(5);
     attention = rows.map((r) => ({
