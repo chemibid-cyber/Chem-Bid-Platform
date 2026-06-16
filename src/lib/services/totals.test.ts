@@ -61,6 +61,18 @@ describe('provider matching', () => {
     expect(providerMatchesRequest(packer, { kind: 'packing', vehicleTypes: [], packingType: 'iso_tank' })).toBe(false);
   });
 
+  it('reaches ANY packing supplier for a custom ("Other") packing type', () => {
+    // A free-text type the standard list doesn't cover can't be matched exactly,
+    // so every packing supplier sees it (they read the spec and decide).
+    expect(
+      providerMatchesRequest(packer, { kind: 'packing', vehicleTypes: [], packingType: 'Glass bottles' }),
+    ).toBe(true);
+    // …but a transporter still never matches a packing inquiry.
+    expect(
+      providerMatchesRequest(transporter, { kind: 'packing', vehicleTypes: [], packingType: 'Glass bottles' }),
+    ).toBe(false);
+  });
+
   it('never matches across service kinds or inactive profiles', () => {
     expect(providerMatchesRequest(packer, { kind: 'transport', vehicleTypes: ['trailer'], packingType: null })).toBe(false);
     expect(providerMatchesRequest(transporter, { kind: 'packing', vehicleTypes: [], packingType: 'drums' })).toBe(false);

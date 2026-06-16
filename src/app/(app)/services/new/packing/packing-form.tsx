@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useFormState } from 'react-dom';
 import { createPackingRequestAction, type ServiceFormState } from '../../actions';
 import { PACKING_TYPES, PACKING_CONDITIONS } from '@/lib/services/constants';
@@ -15,6 +16,7 @@ const TERMS = ['advance', 'net15', 'net30', 'net45', 'lc'];
 
 export function PackingRequestForm() {
   const [state, action] = useFormState<ServiceFormState, FormData>(createPackingRequestAction, null);
+  const [packingType, setPackingType] = useState('drums');
 
   return (
     <form action={action} className="space-y-5">
@@ -27,12 +29,18 @@ export function PackingRequestForm() {
       <div className="grid gap-4 sm:grid-cols-3">
         <div className="space-y-2">
           <Label htmlFor="packingType">Packing type</Label>
-          <Select id="packingType" name="packingType" defaultValue="drums">
+          <Select
+            id="packingType"
+            name="packingType"
+            value={packingType}
+            onChange={(e) => setPackingType(e.target.value)}
+          >
             {PACKING_TYPES.map((p) => (
               <option key={p.value} value={p.value}>
                 {p.label}
               </option>
             ))}
+            <option value="other">Other (specify)…</option>
           </Select>
         </div>
         <div className="space-y-2">
@@ -50,6 +58,19 @@ export function PackingRequestForm() {
           <Input id="quantityPieces" name="quantityPieces" type="number" min="1" step="1" required />
         </div>
       </div>
+
+      {packingType === 'other' ? (
+        <div className="space-y-2">
+          <Label htmlFor="packingTypeOther">Specify packing type</Label>
+          <Input
+            id="packingTypeOther"
+            name="packingTypeOther"
+            maxLength={80}
+            required
+            placeholder="e.g. Glass bottles, jerry cans, composite IBCs"
+          />
+        </div>
+      ) : null}
 
       <div className="space-y-2">
         <Label htmlFor="materialSpec">Specification of material (optional)</Label>

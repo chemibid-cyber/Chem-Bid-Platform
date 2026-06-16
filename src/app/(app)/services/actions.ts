@@ -231,6 +231,7 @@ export async function createTransportRequestAction(
 
 const packingSchema = z.object({
   packingType: z.string().min(1, 'Pick a packing type.'),
+  packingTypeOther: z.string().optional(),
   condition: z.enum(['new', 'used', 'other']),
   quantityPieces: z.string().min(1, 'Quantity (pieces) is required.'),
   materialSpec: z.string().optional(),
@@ -253,7 +254,19 @@ export async function createPackingRequestAction(
   if (!parsed.success) return { error: parsed.error.errors[0]?.message ?? 'Please complete the form.' };
   const data = parsed.data;
 
-  if (!PACKING_TYPE_VALUES.includes(data.packingType)) return { error: 'Pick a valid packing type.' };
+  // "Other" = a free-text packing type the standard list doesn't cover. Store
+  // the typed value directly (packing_type is a free-text column) so it renders
+  // as-is everywhere and reaches every packing supplier — providerMatchesRequest
+  // treats any non-standard type as a match-all.
+  let packingType = data.packingType;
+  if (packingType === 'other') {
+    const custom = data.packingTypeOther?.trim();
+    if (!custom) return { error: 'Describe the packing type you need.' };
+    if (custom.length > 80) return { error: 'Packing type is too long (max 80 characters).' };
+    packingType = custom;
+  } else if (!PACKING_TYPE_VALUES.includes(packingType)) {
+    return { error: 'Pick a valid packing type.' };
+  }
   const pieces = Number(data.quantityPieces);
   if (!Number.isInteger(pieces) || pieces <= 0) {
     return { error: 'Quantity must be a whole number of pieces, greater than 0.' };
@@ -273,7 +286,7 @@ export async function createPackingRequestAction(
         eq(serviceRequests.neederUserId, user.id),
         eq(serviceRequests.kind, 'packing'),
         eq(serviceRequests.status, 'open'),
-        eq(serviceRequests.packingType, data.packingType),
+        eq(serviceRequests.packingType, packingType),
         eq(serviceRequests.quantityPieces, pieces),
         materialSpec === null
           ? isNull(serviceRequests.materialSpec)
@@ -292,7 +305,7 @@ export async function createPackingRequestAction(
       neederUserId: user.id,
       paymentTerms: data.paymentTerms,
       description: data.description?.trim() || null,
-      packingType: data.packingType,
+      packingType,
       condition: data.condition,
       quantityPieces: pieces,
       materialSpec,

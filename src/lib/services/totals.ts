@@ -7,6 +7,7 @@
  * Tax is an ABSOLUTE rupee value for the job, not per unit.
  */
 import { round2 } from '@/lib/pricing';
+import { PACKING_TYPE_VALUES } from './constants';
 
 export function transportTotal(baseRatePerKg: number, totalQtyKg: number, taxAbs: number): number {
   return round2(Math.max(0, baseRatePerKg) * Math.max(0, totalQtyKg) + Math.max(0, taxAbs));
@@ -60,5 +61,9 @@ export function providerMatchesRequest(
   }
   if (!profile.isPackingSupplier) return false;
   if (!request.packingType) return false;
+  // A custom ("Other") packing type isn't one of the standard keys, so it can't
+  // be matched exactly — it reaches every packing supplier, who read the
+  // free-text type + spec and decide whether to quote.
+  if (!PACKING_TYPE_VALUES.includes(request.packingType)) return true;
   return profile.packingTypes.includes(request.packingType);
 }
