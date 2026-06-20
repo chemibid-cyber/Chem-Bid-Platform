@@ -9,11 +9,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { CenteredAuth } from '../centered-auth';
 
 export default function ForgotPasswordPage() {
   const [state, action] = useFormState(requestResetAction, null);
 
   return (
+    <CenteredAuth>
     <Card className="mx-auto max-w-md">
       <CardHeader>
         <span className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-[13px] bg-graphite text-live">
@@ -46,5 +48,6 @@ export default function ForgotPasswordPage() {
         </p>
       </CardContent>
     </Card>
+    </CenteredAuth>
   );
 }

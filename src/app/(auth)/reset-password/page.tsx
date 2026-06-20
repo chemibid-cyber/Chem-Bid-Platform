@@ -1,4 +1,5 @@
 import { ResetPasswordForm } from './reset-form';
+import { CenteredAuth } from '../centered-auth';
 
 /**
  * Server component: pulls the one-time `token_hash` (+ type) out of the reset link
@@ -13,5 +14,9 @@ export default function ResetPasswordPage({
   const tokenHash = typeof searchParams.token_hash === 'string' ? searchParams.token_hash : '';
   const type = typeof searchParams.type === 'string' ? searchParams.type : 'recovery';
 
-  return <ResetPasswordForm tokenHash={tokenHash} type={type} />;
+  return (
+    <CenteredAuth>
+      <ResetPasswordForm tokenHash={tokenHash} type={type} />
+    </CenteredAuth>
+  );
 }
