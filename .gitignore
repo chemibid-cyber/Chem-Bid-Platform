@@ -35,8 +35,8 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# drizzle
-/drizzle/meta
+# drizzle — note: drizzle/meta (journal + snapshots) IS tracked on purpose; the
+# migrator needs meta/_journal.json to apply migrations from a fresh checkout (CI).
 
 # gitnexus index + generated skills
 /.gitnexus
