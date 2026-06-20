@@ -5,6 +5,8 @@ export default defineConfig({
   test: {
     environment: 'node',
     include: ['src/**/*.{test,spec}.ts'],
+    // Integration tests need a real Postgres — they run via test:integration only.
+    exclude: ['**/node_modules/**', '**/*.integration.test.ts'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary'],
