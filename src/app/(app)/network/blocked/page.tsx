@@ -41,13 +41,13 @@ export default async function BlockedCompaniesPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
-      <Link href="/network" className="text-sm text-muted-foreground hover:text-foreground">
+      <Link href="/network" className="text-sm font-medium text-brand hover:underline">
         ← Back to network
       </Link>
 
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Blocked companies</h1>
-        <p className="text-muted-foreground">
+      <div className="space-y-1">
+        <h1 className="font-display text-2xl font-bold tracking-tight">Blocked companies</h1>
+        <p className="max-w-2xl text-muted-foreground">
           Companies you&apos;ve muted from your requirements. An expired block no longer applies —
           unblock anytime to make a company eligible again.
         </p>
@@ -55,7 +55,7 @@ export default async function BlockedCompaniesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Your blocks</CardTitle>
+          <CardTitle className="font-display text-base tracking-tight">Your blocks</CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {rows.length === 0 ? (
@@ -83,13 +83,13 @@ export default async function BlockedCompaniesPage() {
                       <TableCell>
                         <div className="font-medium">{name}</div>
                         {info?.gstin ? (
-                          <div className="font-mono text-xs text-muted-foreground">{info.gstin}</div>
+                          <div className="font-mono text-xs tabular-nums text-muted-foreground">{info.gstin}</div>
                         ) : null}
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="text-muted-foreground">
                         {r.scope === 'all' ? 'All products' : `CAS ${r.casNumber ?? '—'}`}
                       </TableCell>
-                      <TableCell>{r.expiresAt ? formatIST(r.expiresAt) : 'Permanent'}</TableCell>
+                      <TableCell className="tabular-nums text-muted-foreground">{r.expiresAt ? formatIST(r.expiresAt) : 'Permanent'}</TableCell>
                       <TableCell>
                         <Badge variant={expired ? 'secondary' : 'destructive'}>
                           {expired ? 'Expired' : 'Active'}

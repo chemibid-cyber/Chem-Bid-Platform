@@ -22,8 +22,8 @@ export const metadata = { title: 'Auction' };
 function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 text-sm font-medium">{value || '—'}</dd>
+      <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">{label}</dt>
+      <dd className="mt-0.5 text-sm font-medium tabular-nums">{value || '—'}</dd>
     </div>
   );
 }
@@ -128,18 +128,35 @@ export default async function AuctionDetailPage({
 
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight">{auction.name}</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="font-display text-2xl font-bold tracking-tight">{auction.name}</h1>
             {auction.blind ? <Badge variant="outline">Blind</Badge> : null}
             <Badge variant={meta.variant}>{meta.label}</Badge>
           </div>
           {auction.casNumber ? (
-            <p className="text-muted-foreground">CAS {auction.casNumber}</p>
+            <p className="tabular-nums text-muted-foreground">CAS {auction.casNumber}</p>
           ) : (
             <p className="text-muted-foreground">Custom mixture</p>
           )}
         </div>
         {auction.specFileUrl ? <SpecDownloadButton auctionId={auction.id} /> : null}
+      </div>
+
+      <div className="grid gap-4 rounded-2xl bg-graphite p-6 text-white sm:grid-cols-2">
+        <div>
+          <div className="text-xs uppercase tracking-[0.1em] text-white/70">Closes</div>
+          <div className="mt-1 font-display text-xl font-semibold tracking-tight tabular-nums">
+            {auction.status === 'active'
+              ? `${formatIST(auction.closesAt)} (in ${timeRemaining(auction.closesAt)})`
+              : formatIST(auction.closesAt)}
+          </div>
+        </div>
+        <div className="border-t border-white/10 pt-4 sm:border-l sm:border-t-0 sm:pl-6 sm:pt-0">
+          <div className="text-xs uppercase tracking-[0.1em] text-white/70">Bids received</div>
+          <div className="mt-1 font-display text-xl font-semibold tracking-tight tabular-nums">
+            {String(bidCount)}
+          </div>
+        </div>
       </div>
 
       <Card>
@@ -165,15 +182,6 @@ export default async function AuctionDetailPage({
                 <Detail label="Remarks" value={auction.remarks} />
               </div>
             ) : null}
-            <Detail
-              label="Closes"
-              value={
-                auction.status === 'active'
-                  ? `${formatIST(auction.closesAt)} (in ${timeRemaining(auction.closesAt)})`
-                  : formatIST(auction.closesAt)
-              }
-            />
-            <Detail label="Bids received" value={String(bidCount)} />
           </dl>
         </CardContent>
       </Card>
@@ -181,7 +189,7 @@ export default async function AuctionDetailPage({
       {proposalRows.length > 0 ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">
+            <CardTitle className="font-display text-base tracking-tight">
               Seller proposals{' '}
               <Badge variant="warning" className="ml-1 align-middle">
                 {proposalRows.length} pending
@@ -204,8 +212,8 @@ export default async function AuctionDetailPage({
                   <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
                     {p.changes.map((c) => (
                       <div key={c.label}>
-                        <dt className="text-xs uppercase tracking-wide text-muted-foreground">{c.label}</dt>
-                        <dd className="font-medium">{c.value}</dd>
+                        <dt className="text-xs uppercase tracking-[0.1em] text-muted-foreground">{c.label}</dt>
+                        <dd className="font-medium tabular-nums">{c.value}</dd>
                       </div>
                     ))}
                   </dl>
@@ -235,7 +243,7 @@ export default async function AuctionDetailPage({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Bids</CardTitle>
+          <CardTitle className="font-display text-base tracking-tight">Bids</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           {auction.status === 'active' ? (

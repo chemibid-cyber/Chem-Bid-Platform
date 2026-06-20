@@ -39,26 +39,36 @@ export default async function OperatorDisputes() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Dispute queue</h1>
+      <div>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Dispute queue</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Review and resolve disputes raised on confirmed deals.
+        </p>
+      </div>
 
       {open.length === 0 ? (
-        <p className="text-muted-foreground">No open disputes. 🎉</p>
+        <Card>
+          <CardContent className="py-10 text-center text-muted-foreground">
+            No open disputes. 🎉
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-4">
           {open.map((r) => (
             <Card key={r.dispute.id}>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">{r.auctionName}</CardTitle>
+                <div className="flex items-center justify-between gap-3">
+                  <CardTitle className="font-display text-base tracking-tight">{r.auctionName}</CardTitle>
                   <Badge variant="warning">open</Badge>
                 </div>
                 <p className="text-sm text-muted-foreground">
-                  {r.buyerName} ↔ {r.sellerName} · ₹{formatRate(r.finalTotal)} · raised by {r.raisedByName}{' '}
-                  {r.raisedByLast} on {formatIST(r.dispute.createdAt)}
+                  {r.buyerName} ↔ {r.sellerName} ·{' '}
+                  <span className="tabular-nums">₹{formatRate(r.finalTotal)}</span> · raised by{' '}
+                  {r.raisedByName} {r.raisedByLast} on {formatIST(r.dispute.createdAt)}
                 </p>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="rounded-md border bg-muted/30 p-3 text-sm">{r.dispute.reason}</div>
+                <div className="rounded-xl bg-muted/40 p-3 text-sm">{r.dispute.reason}</div>
                 <ResolveDisputeForm disputeId={r.dispute.id} />
               </CardContent>
             </Card>
@@ -74,7 +84,7 @@ export default async function OperatorDisputes() {
           <div className="mt-3 space-y-2">
             {resolved.map((r) => (
               <Card key={r.dispute.id}>
-                <CardContent className="py-3 text-sm">
+                <CardContent className="p-4 text-sm">
                   <span className="font-medium">{r.auctionName}</span> — {r.dispute.reason}
                   {r.dispute.resolutionNote ? (
                     <p className="mt-1 text-muted-foreground">Resolution: {r.dispute.resolutionNote}</p>

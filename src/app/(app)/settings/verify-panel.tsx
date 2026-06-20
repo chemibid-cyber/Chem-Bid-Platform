@@ -49,7 +49,7 @@ function ChannelRow(props: {
   }
 
   return (
-    <div className="rounded-lg border p-4">
+    <div className="rounded-xl bg-background p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div>
           <p className="text-xs uppercase tracking-wide text-muted-foreground">{props.label}</p>

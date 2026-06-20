@@ -5,7 +5,7 @@ import { requireUser } from '@/lib/auth/session';
 import { ownerScope } from '@/lib/auth/scope';
 import { db } from '@/lib/db';
 import { auctions, catalogItems } from '@/lib/db/schema';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -69,15 +69,18 @@ export default async function NewAuctionPage({ searchParams }: { searchParams: {
     .orderBy(asc(catalogItems.name));
 
   return (
-    <div className="mx-auto max-w-2xl space-y-4">
+    <div className="mx-auto max-w-2xl space-y-5">
       <Link href="/auctions" className="text-sm text-muted-foreground hover:text-foreground">
         ← Back to auctions
       </Link>
+      <div className="space-y-1">
+        <h1 className="font-display text-2xl font-bold tracking-tight">Post a requirement</h1>
+        <p className="text-sm text-muted-foreground">
+          A short, domain-fluent form. CAS, purity and packing — to the people who live in them.
+        </p>
+      </div>
       <Card>
-        <CardHeader>
-          <CardTitle>Post a requirement</CardTitle>
-        </CardHeader>
-        <CardContent>
+        <CardContent className="pt-6">
           {company.verificationStatus !== 'verified' ? (
             <Alert variant="warning">
               <AlertTitle>Verification required</AlertTitle>

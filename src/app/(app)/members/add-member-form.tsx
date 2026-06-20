@@ -75,7 +75,7 @@ export function AddMemberForm() {
 
       <div className="space-y-2">
         <Label>Capabilities</Label>
-        <div className="flex flex-wrap gap-x-6 gap-y-2">
+        <div className="flex flex-wrap gap-3 rounded-xl bg-muted/40 p-3">
           <label className="inline-flex cursor-pointer items-center gap-2 text-sm leading-none">
             <Checkbox
               name="canBuy"
@@ -99,6 +99,7 @@ export function AddMemberForm() {
             <span>Can sell</span>
           </label>
         </div>
+        <p className="text-xs text-muted-foreground">Pick at least one — Buy, Sell, or both.</p>
         {capError ? <p className="text-xs text-destructive">{capError}</p> : null}
       </div>
 

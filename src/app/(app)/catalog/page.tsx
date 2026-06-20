@@ -58,10 +58,10 @@ export default async function CatalogPage({
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight capitalize">{profileType} catalog</h1>
-          <p className="text-muted-foreground">
+          <h1 className="font-display text-2xl font-bold capitalize tracking-tight">{profileType} catalog</h1>
+          <p className="mt-1 text-muted-foreground">
             {mode === 'sell'
               ? 'What you supply — used to match you to buyer requirements.'
               : 'Chemicals you buy — used to target you for proactive offers.'}
@@ -102,24 +102,24 @@ export default async function CatalogPage({
           />
         </Card>
       ) : (
-        <Card>
+        <Card className="overflow-hidden p-0">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Product</TableHead>
+                <TableHead className="pl-6">Product</TableHead>
                 <TableHead>CAS</TableHead>
                 <TableHead>Grade</TableHead>
-                <TableHead>Min purity</TableHead>
+                <TableHead className="text-right">Min purity</TableHead>
                 <TableHead>Roles</TableHead>
                 <TableHead>Owner</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead className="pr-6 text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {items.map((it) => (
                 <TableRow key={it.id} className={it.delisted ? 'opacity-50' : ''}>
-                  <TableCell className="font-medium">
-                    {it.name}
+                  <TableCell className="pl-6">
+                    <span className="font-display font-semibold tracking-tight">{it.name}</span>
                     {it.isMixture ? (
                       <Badge variant="outline" className="ml-2">
                         Mixture
@@ -136,16 +136,16 @@ export default async function CatalogPage({
                       </Badge>
                     ) : null}
                   </TableCell>
-                  <TableCell className="text-muted-foreground">{it.casNumber ?? '—'}</TableCell>
+                  <TableCell className="tabular-nums text-muted-foreground">{it.casNumber ?? '—'}</TableCell>
                   <TableCell>{GRADE_LABEL[it.grade] ?? it.grade}</TableCell>
-                  <TableCell>{it.minPurity ? `${it.minPurity}%` : '—'}</TableCell>
+                  <TableCell className="text-right tabular-nums">{it.minPurity ? `${it.minPurity}%` : '—'}</TableCell>
                   <TableCell className="text-sm">
                     {it.roles.map((r) => ROLE_LABEL[r] ?? r).join(', ') || '—'}
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {it.ownerFirst} {it.ownerLast}
                   </TableCell>
-                  <TableCell className="text-right">
+                  <TableCell className="pr-6 text-right">
                     {(it.ownerUserId === user.id || user.isAdmin) && !it.delisted ? (
                       <CatalogItemActions itemId={it.id} />
                     ) : null}

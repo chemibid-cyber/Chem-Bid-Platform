@@ -28,7 +28,7 @@ export default async function EditCatalogItemPage({ params }: { params: { id: st
       </Link>
       <Card>
         <CardHeader>
-          <CardTitle>Edit product</CardTitle>
+          <CardTitle className="font-display text-xl tracking-tight">Edit product</CardTitle>
         </CardHeader>
         <CardContent>
           <CatalogEditForm

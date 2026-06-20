@@ -11,6 +11,11 @@ import { MemberRowActions } from './member-row-actions';
 
 export const metadata = { title: 'Members' };
 
+/** Two-letter avatar initials from a member's name. */
+function initials(first: string, last: string): string {
+  return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
+}
+
 export default async function MembersPage() {
   const { user, company } = await requireAdmin();
 
@@ -22,15 +27,25 @@ export default async function MembersPage() {
 
   return (
     <div className="grid gap-6 lg:grid-cols-3">
-      <div className="lg:col-span-2 space-y-4">
-        <h1 className="text-2xl font-bold tracking-tight">Members</h1>
+      <div className="space-y-4 lg:col-span-2">
+        <div className="space-y-1">
+          <h1 className="font-display text-2xl font-bold tracking-tight">
+            Members{' '}
+            <span className="text-base font-medium tabular-nums text-muted-foreground">
+              · {members.length} {members.length === 1 ? 'person' : 'people'}
+            </span>
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Admins invite colleagues and set what each can do. Members only see their own auctions.
+          </p>
+        </div>
         <Card>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Name</TableHead>
+                <TableHead>Person</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Capabilities</TableHead>
+                <TableHead>Can do</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
@@ -39,14 +54,32 @@ export default async function MembersPage() {
               {members.map((m) => (
                 <TableRow key={m.id}>
                   <TableCell>
-                    <div className="font-medium">
-                      {m.firstName} {m.lastName}
-                      {m.id === user.id ? <span className="ml-1 text-muted-foreground">(you)</span> : null}
+                    <div className="flex items-center gap-3">
+                      <span
+                        aria-hidden
+                        className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-graphite text-xs font-semibold text-white"
+                      >
+                        {initials(m.firstName, m.lastName)}
+                      </span>
+                      <div className="min-w-0">
+                        <div className="font-medium">
+                          {m.firstName} {m.lastName}
+                          {m.id === user.id ? (
+                            <span className="ml-1 font-normal text-muted-foreground">(you)</span>
+                          ) : null}
+                        </div>
+                        <div className="text-xs text-muted-foreground">{m.email}</div>
+                        {m.team ? <div className="text-xs text-muted-foreground">{m.team}</div> : null}
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">{m.email}</div>
-                    {m.team ? <div className="text-xs text-muted-foreground">{m.team}</div> : null}
                   </TableCell>
-                  <TableCell>{m.isAdmin ? <Badge>Admin</Badge> : <Badge variant="secondary">Member</Badge>}</TableCell>
+                  <TableCell>
+                    {m.isAdmin ? (
+                      <Badge variant="brand">Admin</Badge>
+                    ) : (
+                      <Badge variant="secondary">Member</Badge>
+                    )}
+                  </TableCell>
                   <TableCell>
                     {m.isAdmin ? (
                       <span className="text-sm text-muted-foreground">Buy + Sell</span>
@@ -81,7 +114,7 @@ export default async function MembersPage() {
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Invite a member</h2>
+        <h2 className="font-display text-lg font-semibold tracking-tight">Invite a colleague</h2>
         <Card>
           <CardHeader>
             <CardTitle className="text-base">New member</CardTitle>

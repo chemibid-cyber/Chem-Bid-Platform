@@ -14,7 +14,7 @@ export default async function NewTransportRequestPage() {
       </Link>
       <Card>
         <CardHeader>
-          <CardTitle>Request transport</CardTitle>
+          <CardTitle className="font-display text-xl tracking-tight">Request transport</CardTitle>
           <CardDescription>
             Open identity: matching transporters see your full corporate profile the moment you
             publish, and you see theirs the moment they quote.

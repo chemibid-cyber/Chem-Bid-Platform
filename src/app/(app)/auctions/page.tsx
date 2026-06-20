@@ -5,7 +5,7 @@ import { requireUser } from '@/lib/auth/session';
 import { ownerScope } from '@/lib/auth/scope';
 import { db } from '@/lib/db';
 import { auctions, bids } from '@/lib/db/schema';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { buttonVariants } from '@/components/ui/button';
 import { EmptyState } from '@/components/ui/help';
@@ -42,11 +42,16 @@ export default async function AuctionsPage() {
     .orderBy(desc(auctions.createdAt));
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">My auctions</h1>
+    <div className="space-y-8">
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div className="space-y-1">
+          <h1 className="font-display text-2xl font-bold tracking-tight">My auctions</h1>
+          <p className="text-sm text-muted-foreground">
+            A dense, comparable view — because comparison is the job here.
+          </p>
+        </div>
         <Link href="/auctions/new" className={cn(buttonVariants())}>
-          <Plus className="h-4 w-4" /> New auction
+          <Plus className="h-4 w-4" /> Post a requirement
         </Link>
       </div>
 
@@ -69,41 +74,50 @@ export default async function AuctionsPage() {
           if (items.length === 0) return null;
           return (
             <section key={g.title} className="space-y-3">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                {g.title}
-              </h2>
-              <div className="grid gap-3">
-                {items.map((a) => {
-                  const meta = auctionStatusMeta(a.status);
-                  return (
-                    <Link key={a.id} href={`/auctions/${a.id}`}>
-                      <Card className="transition-shadow hover:shadow-md">
-                        <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-semibold">{a.name}</span>
-                              {a.casNumber ? (
-                                <span className="text-sm text-muted-foreground">CAS {a.casNumber}</span>
-                              ) : null}
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {a.quantity} {UNIT_LABEL[a.unit] ?? a.unit} ·{' '}
-                              {Number(a.bidCount)} bid{Number(a.bidCount) === 1 ? '' : 's'} ·{' '}
-                              {a.status === 'active'
-                                ? `Closes: ${formatIST(a.closesAt)} (in ${timeRemaining(a.closesAt)})`
-                                : formatIST(a.closesAt)}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {a.blind ? <Badge variant="outline">Blind</Badge> : null}
-                            <Badge variant={meta.variant}>{meta.label}</Badge>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    </Link>
-                  );
-                })}
+              <div className="flex items-center gap-2">
+                <h2 className="text-xs font-semibold uppercase tracking-[0.1em] text-muted-foreground">
+                  {g.title}
+                </h2>
+                <span className="text-xs font-medium tabular-nums text-muted-foreground/70">
+                  {items.length}
+                </span>
               </div>
+              <Card className="overflow-hidden">
+                <div className="divide-y divide-border">
+                  {items.map((a) => {
+                    const meta = auctionStatusMeta(a.status);
+                    return (
+                      <Link
+                        key={a.id}
+                        href={`/auctions/${a.id}`}
+                        className="flex flex-wrap items-center justify-between gap-3 px-5 py-4 transition-colors hover:bg-muted/40"
+                      >
+                        <div className="min-w-0">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="font-display font-semibold tracking-tight">{a.name}</span>
+                            {a.casNumber ? (
+                              <span className="text-sm tabular-nums text-muted-foreground">
+                                CAS {a.casNumber}
+                              </span>
+                            ) : null}
+                          </div>
+                          <div className="mt-0.5 text-sm tabular-nums text-muted-foreground">
+                            {a.quantity} {UNIT_LABEL[a.unit] ?? a.unit} ·{' '}
+                            {Number(a.bidCount)} bid{Number(a.bidCount) === 1 ? '' : 's'} ·{' '}
+                            {a.status === 'active'
+                              ? `Closes: ${formatIST(a.closesAt)} (in ${timeRemaining(a.closesAt)})`
+                              : formatIST(a.closesAt)}
+                          </div>
+                        </div>
+                        <div className="flex shrink-0 items-center gap-2">
+                          {a.blind ? <Badge variant="outline">Blind</Badge> : null}
+                          <Badge variant={meta.variant}>{meta.label}</Badge>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              </Card>
             </section>
           );
         })

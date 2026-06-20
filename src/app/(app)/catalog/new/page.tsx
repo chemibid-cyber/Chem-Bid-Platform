@@ -18,7 +18,7 @@ export default async function NewCatalogItemPage() {
       </Link>
       <Card>
         <CardHeader>
-          <CardTitle>Add a product</CardTitle>
+          <CardTitle className="font-display text-xl tracking-tight">Add a product</CardTitle>
         </CardHeader>
         <CardContent>
           <CatalogForm profileLabel={profileLabel} />

@@ -14,7 +14,7 @@ export default async function NewPackingRequestPage() {
       </Link>
       <Card>
         <CardHeader>
-          <CardTitle>Request packing material</CardTitle>
+          <CardTitle className="font-display text-xl tracking-tight">Request packing material</CardTitle>
           <CardDescription>
             Open identity: matching packing suppliers see your full corporate profile the moment you
             publish, and you see theirs the moment they quote.

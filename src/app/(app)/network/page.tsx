@@ -39,17 +39,22 @@ export default async function NetworkPage() {
   return (
     <div className="grid gap-6 lg:grid-cols-3">
       <div className="space-y-6 lg:col-span-2">
-        <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Vendor network</h1>
-            <p className="text-muted-foreground">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="space-y-1">
+            <h1 className="font-display text-2xl font-bold tracking-tight">
+              Vendor network{' '}
+              <span className="text-base font-medium tabular-nums text-muted-foreground">
+                · {outgoing.length} {outgoing.length === 1 ? 'partner' : 'partners'}
+              </span>
+            </h1>
+            <p className="max-w-2xl text-muted-foreground">
               Register trusted suppliers by GSTIN + CAS. &quot;Registered Only&quot; auctions go to
               active partners; pending ones are skipped until they join.
             </p>
           </div>
           <Link
             href="/network/blocked"
-            className="shrink-0 text-sm font-medium text-muted-foreground underline hover:text-foreground"
+            className="shrink-0 text-sm font-medium text-brand hover:underline"
           >
             Blocked companies →
           </Link>
@@ -57,7 +62,9 @@ export default async function NetworkPage() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Your registered partners</CardTitle>
+            <CardTitle className="font-display text-base tracking-tight">
+              Your registered partners
+            </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
             {outgoing.length === 0 ? (
@@ -75,10 +82,13 @@ export default async function NetworkPage() {
                 <TableBody>
                   {outgoing.map((p) => (
                     <TableRow key={p.id}>
-                      <TableCell className="font-mono text-sm">{p.partnerGstin}</TableCell>
-                      <TableCell>{p.casNumber}</TableCell>
+                      <TableCell className="font-mono text-sm tabular-nums text-muted-foreground">
+                        {p.partnerGstin}
+                      </TableCell>
+                      <TableCell className="font-medium">{p.casNumber}</TableCell>
                       <TableCell>
                         <Badge
+                          className="capitalize"
                           variant={
                             p.status === 'active' ? 'success' : p.status === 'pending' ? 'warning' : 'secondary'
                           }
@@ -100,7 +110,9 @@ export default async function NetworkPage() {
         {incoming.length > 0 ? (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Companies that added you</CardTitle>
+              <CardTitle className="font-display text-base tracking-tight">
+                Companies that added you
+              </CardTitle>
               <CardDescription>You can decline being in a private network (DPDP consent).</CardDescription>
             </CardHeader>
             <CardContent className="p-0">
@@ -116,10 +128,10 @@ export default async function NetworkPage() {
                 <TableBody>
                   {incoming.map((p) => (
                     <TableRow key={p.id}>
-                      <TableCell>{buyerNames.get(p.buyerCompanyId) ?? '—'}</TableCell>
+                      <TableCell className="font-medium">{buyerNames.get(p.buyerCompanyId) ?? '—'}</TableCell>
                       <TableCell>{p.casNumber}</TableCell>
                       <TableCell>
-                        <Badge variant={p.status === 'declined' ? 'secondary' : 'success'}>
+                        <Badge className="capitalize" variant={p.status === 'declined' ? 'secondary' : 'success'}>
                           {p.status}
                         </Badge>
                       </TableCell>
@@ -136,7 +148,7 @@ export default async function NetworkPage() {
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-lg font-semibold">Register a partner</h2>
+        <h2 className="font-display text-lg font-semibold tracking-tight">Register a partner</h2>
         <Card>
           <CardContent className="pt-6">
             <AddPartnerForm />

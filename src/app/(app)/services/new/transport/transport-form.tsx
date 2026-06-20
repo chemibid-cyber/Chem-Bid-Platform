@@ -54,7 +54,7 @@ export function TransportRequestForm() {
         <Label>Vehicle type (pick all that work)</Label>
         <div className="grid gap-2 sm:grid-cols-2">
           {VEHICLE_TYPES.map((v) => (
-            <label key={v.value} className="flex items-center gap-2 rounded-md border bg-muted/20 p-2.5 text-sm">
+            <label key={v.value} className="flex items-center gap-2 rounded-xl border bg-muted/20 p-2.5 text-sm">
               <Checkbox name="vehicleTypes" value={v.value} />
               {v.label}
             </label>

@@ -102,7 +102,7 @@ export function CatalogForm({ profileLabel }: { profileLabel: string }) {
         Adding to your <strong>{profileLabel}</strong> catalog.
       </p>
 
-      <div className="flex items-center gap-2 rounded-md border bg-muted/30 p-3">
+      <div className="flex items-center gap-2 rounded-2xl bg-muted/40 p-4">
         <Checkbox
           id="isMixture"
           name="isMixture"
@@ -139,7 +139,7 @@ export function CatalogForm({ profileLabel }: { profileLabel: string }) {
           </div>
 
           {resolution?.status === 'found' ? (
-            <p className="text-sm text-success">Matched on PubChem and locked.</p>
+            <p className="text-sm font-medium text-brand">Matched on PubChem and locked.</p>
           ) : null}
           {resolution?.status === 'not_found' ? (
             <p className="text-sm text-warning-foreground">
@@ -147,7 +147,7 @@ export function CatalogForm({ profileLabel }: { profileLabel: string }) {
             </p>
           ) : null}
           {resolution?.status === 'ambiguous' ? (
-            <div className="rounded-md border p-3">
+            <div className="rounded-2xl bg-muted/40 p-4">
               <p className="mb-2 text-sm font-medium">Multiple matches — pick one:</p>
               <div className="space-y-1">
                 {resolution.candidates.map((c) => (
@@ -216,10 +216,10 @@ export function CatalogForm({ profileLabel }: { profileLabel: string }) {
           <DecimalInput id="minPurity" name="minPurity" maxDecimals={2} min="0" max="100" placeholder="99.5" />
         </div>
       </div>
-      <ul className="space-y-0.5 text-xs text-muted-foreground">
+      <ul className="space-y-1 rounded-2xl bg-muted/40 p-4 text-xs text-muted-foreground">
         {GRADES.map((g) => (
           <li key={g.value}>
-            <strong>{g.label}:</strong> {g.desc}
+            <strong className="text-foreground">{g.label}:</strong> {g.desc}
           </li>
         ))}
       </ul>

@@ -27,7 +27,7 @@ export default async function EditInvitePage({ params }: { params: { id: string 
       </Link>
       <Card>
         <CardHeader>
-          <CardTitle>Edit pending invite</CardTitle>
+          <CardTitle className="font-display tracking-tight">Edit pending invite</CardTitle>
           <CardDescription>
             Fix the name, contact details, or email before {member.firstName} accepts. Changing the
             email re-sends the invite.

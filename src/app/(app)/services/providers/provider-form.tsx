@@ -34,7 +34,7 @@ export function ProviderProfileForm({ initial }: { initial: ProviderInitial }) {
         </Alert>
       ) : null}
 
-      <div className="space-y-3 rounded-md border p-4">
+      <div className="space-y-3 rounded-xl border p-4">
         <label className="flex items-center gap-2 font-medium">
           <Checkbox
             name="isTransporter"
@@ -48,7 +48,7 @@ export function ProviderProfileForm({ initial }: { initial: ProviderInitial }) {
             <Label>Vehicle classes you run</Label>
             <div className="grid gap-2 sm:grid-cols-2">
               {VEHICLE_TYPES.map((v) => (
-                <label key={v.value} className="flex items-center gap-2 rounded-md border bg-muted/20 p-2.5 text-sm">
+                <label key={v.value} className="flex items-center gap-2 rounded-xl border bg-muted/20 p-2.5 text-sm">
                   <Checkbox
                     name="vehicleTypes"
                     value={v.value}
@@ -62,7 +62,7 @@ export function ProviderProfileForm({ initial }: { initial: ProviderInitial }) {
         ) : null}
       </div>
 
-      <div className="space-y-3 rounded-md border p-4">
+      <div className="space-y-3 rounded-xl border p-4">
         <label className="flex items-center gap-2 font-medium">
           <Checkbox
             name="isPackingSupplier"
@@ -76,7 +76,7 @@ export function ProviderProfileForm({ initial }: { initial: ProviderInitial }) {
             <Label>Packing types you stock</Label>
             <div className="grid gap-2 sm:grid-cols-2">
               {PACKING_TYPES.map((p) => (
-                <label key={p.value} className="flex items-center gap-2 rounded-md border bg-muted/20 p-2.5 text-sm">
+                <label key={p.value} className="flex items-center gap-2 rounded-xl border bg-muted/20 p-2.5 text-sm">
                   <Checkbox
                     name="packingTypes"
                     value={p.value}

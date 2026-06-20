@@ -80,7 +80,7 @@ export default async function DisableMemberPage({ params }: { params: { id: stri
       </Link>
       <Card>
         <CardHeader>
-          <CardTitle>
+          <CardTitle className="font-display tracking-tight">
             Disable {member.firstName} {member.lastName}
           </CardTitle>
           <CardDescription>
@@ -90,12 +90,12 @@ export default async function DisableMemberPage({ params }: { params: { id: stri
         </CardHeader>
         <CardContent className="space-y-4">
           {needsReassign ? (
-            <div className="rounded-md border bg-muted/30 p-3 text-sm">
-              <p className="mb-1 font-medium">To be reassigned:</p>
+            <div className="rounded-xl bg-warning/10 p-4 text-sm">
+              <p className="mb-1 font-medium text-warning-foreground">To be reassigned:</p>
               <ul className="list-inside list-disc text-muted-foreground">
-                {items > 0 ? <li>{items} catalog item(s)</li> : null}
-                {liveAuctions > 0 ? <li>{liveAuctions} live auction(s)</li> : null}
-                {activeBids > 0 ? <li>{activeBids} active bid(s)</li> : null}
+                {items > 0 ? <li className="tabular-nums">{items} catalog item(s)</li> : null}
+                {liveAuctions > 0 ? <li className="tabular-nums">{liveAuctions} live auction(s)</li> : null}
+                {activeBids > 0 ? <li className="tabular-nums">{activeBids} active bid(s)</li> : null}
               </ul>
             </div>
           ) : (

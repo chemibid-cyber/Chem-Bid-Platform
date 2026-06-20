@@ -164,6 +164,8 @@ export function AuctionForm({
         </Alert>
       ) : null}
 
+      <h2 className="font-display text-lg font-semibold tracking-tight">What do you need?</h2>
+
       {hasCatalog ? (
         <div className="space-y-2">
           <Label htmlFor="catalogPick">Product from your catalog</Label>
@@ -443,6 +445,10 @@ export function AuctionForm({
       <div className="space-y-2">
         <Label htmlFor="remarks">Remarks</Label>
         <Textarea id="remarks" name="remarks" defaultValue={initial?.remarks ?? ''} />
+      </div>
+
+      <div className="border-t border-border pt-6">
+        <h2 className="font-display text-lg font-semibold tracking-tight">When does it close?</h2>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">

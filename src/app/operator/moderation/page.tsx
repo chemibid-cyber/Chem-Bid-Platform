@@ -30,16 +30,25 @@ export default async function OperatorModeration() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Moderation queue</h1>
+      <div>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Moderation queue</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Reports filed by members against bad actors on the platform.
+        </p>
+      </div>
       {open.length === 0 ? (
-        <p className="text-muted-foreground">No open reports.</p>
+        <Card>
+          <CardContent className="py-10 text-center text-muted-foreground">
+            No open reports.
+          </CardContent>
+        </Card>
       ) : (
         <div className="space-y-3">
           {open.map((r) => (
             <Card key={r.report.id}>
               <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base">
+                <div className="flex items-center justify-between gap-3">
+                  <CardTitle className="font-display text-base tracking-tight">
                     {r.reporterName} reported {r.reportedName}
                   </CardTitle>
                   <Badge variant="warning">open</Badge>
@@ -47,7 +56,7 @@ export default async function OperatorModeration() {
                 <p className="text-xs text-muted-foreground">{formatIST(r.report.createdAt)}</p>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="rounded-md border bg-muted/30 p-3 text-sm">{r.report.reason}</div>
+                <div className="rounded-xl bg-muted/40 p-3 text-sm">{r.report.reason}</div>
                 <ResolveReportButton reportId={r.report.id} />
               </CardContent>
             </Card>

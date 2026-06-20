@@ -2,6 +2,7 @@ import { requireUser } from '@/lib/auth/session';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { ShieldCheck } from 'lucide-react';
 import { formatIST } from '@/lib/format';
 import { isSmsLive } from '@/lib/sms';
 import { GstRefreshForm } from './refresh-form';
@@ -13,7 +14,7 @@ function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 text-sm font-medium">{value || '—'}</dd>
+      <dd className="mt-0.5 text-sm font-medium tabular-nums">{value || '—'}</dd>
     </div>
   );
 }
@@ -23,12 +24,32 @@ export default async function SettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">My Company Profile</h1>
+      <div>
+        <h1 className="font-display text-2xl font-bold tracking-tight">My Company Profile</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Quiet, sectioned and read-only. The verification status is what matters most here.
+        </p>
+      </div>
+
+      {company.verificationStatus === 'verified' ? (
+        <div className="flex items-center gap-4 rounded-2xl bg-brand p-6 text-white">
+          <span className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-xl bg-white/15">
+            <ShieldCheck className="h-6 w-6" />
+          </span>
+          <div className="min-w-0">
+            <div className="font-display text-lg font-bold tracking-tight">GSTIN verified</div>
+            <div className="mt-0.5 truncate text-sm tabular-nums text-white/70">
+              {company.gstin}
+              {company.gstLastRefreshedAt ? ` · confirmed ${formatIST(company.gstLastRefreshedAt)}` : ''}
+            </div>
+          </div>
+        </div>
+      ) : null}
 
       <Card>
         <CardHeader className="flex-row items-start justify-between space-y-0">
           <div>
-            <CardTitle className="text-lg">Corporate identity</CardTitle>
+            <CardTitle className="font-display text-lg tracking-tight">Corporate identity</CardTitle>
             <CardDescription>
               Sourced from the GST network and locked — it cannot be hand-edited.
             </CardDescription>
@@ -67,7 +88,7 @@ export default async function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Your profile</CardTitle>
+          <CardTitle className="font-display text-lg tracking-tight">Your profile</CardTitle>
           <CardDescription>Managed by your Admin. Capabilities control what you can do.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -91,7 +112,7 @@ export default async function SettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Verify contact details</CardTitle>
+          <CardTitle className="font-display text-lg tracking-tight">Verify contact details</CardTitle>
           <CardDescription>
             Confirm your email with a one-time code, so notifications and account recovery
             reliably reach you.

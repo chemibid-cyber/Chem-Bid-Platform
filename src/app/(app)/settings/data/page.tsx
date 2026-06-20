@@ -14,22 +14,32 @@ export default async function DataSettingsPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Privacy &amp; data (DPDP)</h1>
+      <div>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Privacy &amp; data (DPDP)</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Your consent, your records and your right to be forgotten — all in one place.
+        </p>
+      </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Consent</CardTitle>
+          <CardTitle className="font-display text-base tracking-tight">Consent</CardTitle>
           <CardDescription>You accepted the Terms and Privacy Policy at signup.</CardDescription>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground">
-          <p>Consent recorded: {user.dpdpConsentAt ? formatIST(user.dpdpConsentAt) : '—'}</p>
+          <p>
+            Consent recorded:{' '}
+            <span className="tabular-nums text-foreground">
+              {user.dpdpConsentAt ? formatIST(user.dpdpConsentAt) : '—'}
+            </span>
+          </p>
           <p className="mt-2">
             Read our{' '}
-            <Link href="/privacy" className="underline">
+            <Link href="/privacy" className="text-brand hover:underline">
               Privacy Policy
             </Link>{' '}
             and{' '}
-            <Link href="/terms" className="underline">
+            <Link href="/terms" className="text-brand hover:underline">
               Terms
             </Link>
             .
@@ -39,7 +49,7 @@ export default async function DataSettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Email preferences</CardTitle>
+          <CardTitle className="font-display text-base tracking-tight">Email preferences</CardTitle>
         </CardHeader>
         <CardContent>
           <MarketingToggle optOut={user.marketingOptOut} />
@@ -48,7 +58,7 @@ export default async function DataSettingsPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Export my data</CardTitle>
+          <CardTitle className="font-display text-base tracking-tight">Export my data</CardTitle>
           <CardDescription>Download your profile and your company&apos;s records as JSON.</CardDescription>
         </CardHeader>
         <CardContent>
@@ -58,9 +68,11 @@ export default async function DataSettingsPage() {
         </CardContent>
       </Card>
 
-      <Card className="border-destructive/30">
+      <Card>
         <CardHeader>
-          <CardTitle className="text-base text-destructive">Delete my account</CardTitle>
+          <CardTitle className="font-display text-base tracking-tight text-destructive">
+            Delete my account
+          </CardTitle>
           <CardDescription>Request deletion of your personal data.</CardDescription>
         </CardHeader>
         <CardContent>

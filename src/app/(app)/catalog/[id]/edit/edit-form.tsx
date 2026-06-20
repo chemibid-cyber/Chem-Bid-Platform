@@ -35,7 +35,7 @@ export function CatalogEditForm({ item }: { item: EditItem }) {
 
       <div className="space-y-1">
         <Label>Product</Label>
-        <p className="font-semibold">{item.name}</p>
+        <p className="font-display text-lg font-semibold tracking-tight">{item.name}</p>
       </div>
 
       <div className="space-y-2">

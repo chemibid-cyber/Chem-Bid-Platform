@@ -36,7 +36,7 @@ function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 text-sm font-medium">{value || '—'}</dd>
+      <dd className="mt-0.5 text-sm font-medium tabular-nums">{value || '—'}</dd>
     </div>
   );
 }
@@ -65,7 +65,7 @@ function IdentityCard({
       <Building2 className="mt-0.5 h-5 w-5 text-muted-foreground" />
       <div className="min-w-0 flex-1">
         <p className="text-xs uppercase tracking-wide text-muted-foreground">{title}</p>
-        <p className="font-semibold">{legalName}</p>
+        <p className="font-display font-semibold tracking-tight">{legalName}</p>
         <p className="text-sm text-muted-foreground">
           GSTIN {gstin} · {address}
         </p>
@@ -179,7 +179,7 @@ export default async function ServiceRequestPage({
         <div>
           <div className="flex items-center gap-2">
             {request.kind === 'transport' ? <Truck className="h-5 w-5" /> : <Package2 className="h-5 w-5" />}
-            <h1 className="text-2xl font-bold tracking-tight">
+            <h1 className="font-display text-2xl font-bold tracking-tight">
               {SERVICE_KIND_LABEL[request.kind]} inquiry
             </h1>
             <Badge variant={open ? 'success' : 'secondary'}>{SERVICE_STATUS_LABEL[request.status]}</Badge>
@@ -289,7 +289,7 @@ export default async function ServiceRequestPage({
             <div
               key={q.id}
               className={cn(
-                'space-y-3 rounded-lg border p-4',
+                'space-y-3 rounded-xl border p-4',
                 q.status === 'accepted' && 'border-success bg-success/5',
                 q.status === 'declined' && 'opacity-60',
               )}
@@ -315,15 +315,15 @@ export default async function ServiceRequestPage({
                   <p className="text-xs uppercase text-muted-foreground">
                     Base rate ({request.kind === 'transport' ? '₹/kg' : '₹/piece'})
                   </p>
-                  <p className="font-medium">{q.baseRate}</p>
+                  <p className="font-medium tabular-nums">{q.baseRate}</p>
                 </div>
                 <div>
                   <p className="text-xs uppercase text-muted-foreground">Tax (₹, absolute)</p>
-                  <p className="font-medium">{q.taxAmount}</p>
+                  <p className="font-medium tabular-nums">{q.taxAmount}</p>
                 </div>
                 <div>
                   <p className="text-xs uppercase text-muted-foreground">Total cost</p>
-                  <p className="text-base font-bold">{formatINR(q.total)}</p>
+                  <p className="font-display text-base font-bold tabular-nums">{formatINR(q.total)}</p>
                 </div>
               </div>
               <div className="text-sm">

@@ -26,7 +26,7 @@ export function MemberCapabilities({
   }
 
   return (
-    <div className="flex gap-4" aria-busy={pending}>
+    <div className="flex flex-wrap gap-x-4 gap-y-2" aria-busy={pending}>
       <label className="inline-flex cursor-pointer items-center gap-1.5 text-sm leading-none">
         <Checkbox checked={buy} disabled={pending} onChange={(e) => update(e.target.checked, sell)} />
         <span>Buy</span>

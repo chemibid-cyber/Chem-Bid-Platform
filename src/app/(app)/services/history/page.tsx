@@ -84,8 +84,8 @@ export default async function ServiceHistoryPage() {
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Service history</h1>
-        <p className="text-muted-foreground">
+        <h1 className="font-display text-2xl font-bold tracking-tight">Service history</h1>
+        <p className="mt-1 text-muted-foreground">
           The permanent record of every closed or cancelled service transaction — for audits, legal
           verification and cost-basis analysis. Nothing here is ever deleted.
         </p>
@@ -116,8 +116,8 @@ export default async function ServiceHistoryPage() {
                         <Package2 className="h-5 w-5 text-muted-foreground" />
                       )}
                       <div>
-                        <p className="font-semibold">{summary(r)}</p>
-                        <p className="text-sm text-muted-foreground">
+                        <p className="font-display font-semibold tracking-tight">{summary(r)}</p>
+                        <p className="text-sm tabular-nums text-muted-foreground">
                           {SERVICE_KIND_LABEL[r.kind]} · {PAYMENT_TERMS_LABEL[r.paymentTerms]} ·{' '}
                           {formatIST(r.createdAt)}
                         </p>
@@ -125,7 +125,7 @@ export default async function ServiceHistoryPage() {
                     </div>
                     <div className="flex items-center gap-2">
                       {acceptedByRequest.has(r.id) ? (
-                        <span className="text-sm font-semibold">
+                        <span className="font-display text-sm font-semibold tabular-nums">
                           {formatINR(acceptedByRequest.get(r.id))}
                         </span>
                       ) : null}
@@ -167,8 +167,8 @@ export default async function ServiceHistoryPage() {
                           <Package2 className="h-5 w-5 text-muted-foreground" />
                         )}
                         <div>
-                          <p className="font-semibold">{summary(r.request)}</p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="font-display font-semibold tracking-tight">{summary(r.request)}</p>
+                          <p className="text-sm tabular-nums text-muted-foreground">
                             for {r.neederName} · quoted {formatINR(q.total)}
                           </p>
                         </div>

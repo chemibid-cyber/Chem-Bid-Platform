@@ -39,7 +39,7 @@ export default async function ProvidersPage({
       ) : null}
       <Card>
         <CardHeader>
-          <CardTitle>Service provider profile</CardTitle>
+          <CardTitle className="font-display text-xl tracking-tight">Service provider profile</CardTitle>
           <CardDescription>
             Register what your company serves. Matching inquiries land in your inbox the instant
             they publish — quotes carry your full corporate identity ({company.legalName}, GSTIN{' '}

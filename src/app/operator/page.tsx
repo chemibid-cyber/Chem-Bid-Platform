@@ -17,7 +17,27 @@ async function one(q: Promise<{ value: number | string }[]>): Promise<number> {
   return Number((await q)[0]?.value ?? 0);
 }
 
-function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+function Stat({
+  label,
+  value,
+  sub,
+  bold,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  bold?: boolean;
+}) {
+  if (bold) {
+    // The one bold dark moment — the headline platform stat on graphite.
+    return (
+      <div className="rounded-2xl bg-graphite p-6 text-white shadow-card">
+        <p className="text-xs font-medium uppercase tracking-wide text-white/70">{label}</p>
+        <p className="mt-2 font-display text-3xl font-bold tracking-tight tabular-nums">{value}</p>
+        {sub ? <p className="mt-1 text-xs text-white/70">{sub}</p> : null}
+      </div>
+    );
+  }
   return (
     <Card>
       <CardHeader className="pb-2">
@@ -26,7 +46,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-2xl font-bold">{value}</p>
+        <p className="font-display text-2xl font-bold tracking-tight tabular-nums">{value}</p>
         {sub ? <p className="text-xs text-muted-foreground">{sub}</p> : null}
       </CardContent>
     </Card>
@@ -76,16 +96,55 @@ export default async function OperatorDashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Platform analytics</h1>
+      <div>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Platform analytics</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          The platform team&rsquo;s workspace — live counts across every company, auction and deal.
+        </p>
+      </div>
+
+      {/* Divided summary strip — the headline platform counts at a glance. */}
+      <Card className="flex flex-col divide-y sm:flex-row sm:divide-x sm:divide-y-0">
+        <div className="flex-1 p-6">
+          <p className="text-sm text-muted-foreground">Companies</p>
+          <p className="mt-1 font-display text-3xl font-bold tracking-tight tabular-nums">
+            {totalCompanies}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            {activeCompanies} active · {pendingCompanies} pending
+          </p>
+        </div>
+        <div className="flex-1 p-6">
+          <p className="text-sm text-muted-foreground">Live auctions</p>
+          <p className="mt-1 font-display text-3xl font-bold tracking-tight tabular-nums text-brand">
+            {byStatus.active ?? 0}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">{totalAuctions} all-time</p>
+        </div>
+        <div className="flex-1 p-6">
+          <p className="text-sm text-muted-foreground">GSTINs to verify</p>
+          <p className="mt-1 font-display text-3xl font-bold tracking-tight tabular-nums text-warning">
+            {pendingCompanies}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">pending verification</p>
+        </div>
+        <div className="flex-1 p-6">
+          <p className="text-sm text-muted-foreground">Quoted bids</p>
+          <p className="mt-1 font-display text-3xl font-bold tracking-tight tabular-nums">
+            {totalBids}
+          </p>
+          <p className="mt-1 text-xs text-muted-foreground">across all auctions</p>
+        </div>
+      </Card>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Stat label="Companies" value={String(totalCompanies)} sub={`${activeCompanies} active · ${pendingCompanies} pending`} />
-        <Stat label="Auctions" value={String(totalAuctions)} sub={`${byStatus.active ?? 0} active · ${byStatus.closed ?? 0} closed`} />
-        <Stat label="Quoted bids" value={String(totalBids)} />
-        <Stat label="Deals confirmed" value={String(totalDeals)} />
+        <Stat label="Deals confirmed" value={String(totalDeals)} sub="mutual intent recorded" bold />
         <Stat label="Completion rate" value={`${completionRate}%`} sub="deals ÷ auctions that closed with bids" />
         <Stat label="Median bids / auction" value={medianBids.toFixed(1)} />
         <Stat label="Median time-to-close" value={`${medianHours.toFixed(1)}h`} />
+        <Stat label="Companies" value={String(totalCompanies)} sub={`${activeCompanies} active · ${pendingCompanies} pending`} />
+        <Stat label="Auctions" value={String(totalAuctions)} sub={`${byStatus.active ?? 0} active · ${byStatus.closed ?? 0} closed`} />
+        <Stat label="Quoted bids" value={String(totalBids)} />
         <Stat label="Est. burn (rough)" value={`₹${burnInr.toLocaleString('en-IN')}`} sub={`${gstCalls} GST + ~${estEmails} emails`} />
       </div>
 

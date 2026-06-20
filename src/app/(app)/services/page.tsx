@@ -42,8 +42,8 @@ function RequestRow({ r, quoteCount }: { r: typeof serviceRequests.$inferSelect;
               <Package2 className="h-5 w-5 text-muted-foreground" />
             )}
             <div>
-              <p className="font-semibold">{requestSummary(r)}</p>
-              <p className="text-sm text-muted-foreground">
+              <p className="font-display font-semibold tracking-tight">{requestSummary(r)}</p>
+              <p className="text-sm tabular-nums text-muted-foreground">
                 {SERVICE_KIND_LABEL[r.kind]} · {PAYMENT_TERMS_LABEL[r.paymentTerms]} ·{' '}
                 {formatIST(r.createdAt)}
               </p>
@@ -51,7 +51,7 @@ function RequestRow({ r, quoteCount }: { r: typeof serviceRequests.$inferSelect;
           </div>
           <div className="flex items-center gap-2">
             {typeof quoteCount === 'number' ? (
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm tabular-nums text-muted-foreground">
                 {quoteCount} quote{quoteCount === 1 ? '' : 's'}
               </span>
             ) : null}
@@ -117,8 +117,8 @@ export default async function ServicesPage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">Services hub</h1>
-          <p className="text-muted-foreground">
+          <h1 className="font-display text-2xl font-bold tracking-tight">Services hub</h1>
+          <p className="mt-1 text-muted-foreground">
             Transport &amp; packing-material marketplace — open identity, no blind bidding.
           </p>
         </div>
@@ -163,7 +163,7 @@ export default async function ServicesPage() {
                     </span>
                     <ArrowRight className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <p className="font-semibold">Request transport</p>
+                  <p className="font-display font-semibold tracking-tight">Request transport</p>
                   <p className="text-sm text-muted-foreground">
                     Tankers, trucks, trailers or containers for a chemical movement.
                   </p>
@@ -179,7 +179,7 @@ export default async function ServicesPage() {
                     </span>
                     <ArrowRight className="h-4 w-4 text-muted-foreground" />
                   </div>
-                  <p className="font-semibold">Request packing material</p>
+                  <p className="font-display font-semibold tracking-tight">Request packing material</p>
                   <p className="text-sm text-muted-foreground">
                     FIBC bags, drums, ISO tanks or carboys — new or used.
                   </p>
@@ -201,7 +201,7 @@ export default async function ServicesPage() {
                   </span>
                   <ArrowRight className="h-4 w-4 text-muted-foreground" />
                 </div>
-                <p className="font-semibold">{profile?.active ? 'My provider profile' : 'Become a provider'}</p>
+                <p className="font-display font-semibold tracking-tight">{profile?.active ? 'My provider profile' : 'Become a provider'}</p>
                 <p className="text-sm text-muted-foreground">
                   {profile?.active
                     ? 'Update the vehicle classes / packing types you serve.'

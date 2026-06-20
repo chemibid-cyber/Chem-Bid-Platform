@@ -84,16 +84,16 @@ export function ServiceQuoteForm({
         </div>
       </div>
 
-      <div className="rounded-md border bg-muted/30 p-3 text-sm">
+      <div className="rounded-xl border bg-muted/30 p-3 text-sm">
         Total cost:{' '}
-        <span className="text-base font-semibold">{formatINR(total)}</span>{' '}
-        <span className="text-muted-foreground">
+        <span className="font-display text-base font-semibold tabular-nums">{formatINR(total)}</span>{' '}
+        <span className="tabular-nums text-muted-foreground">
           = base rate × {qtyLabel} + tax
         </span>
       </div>
 
       <div className="space-y-2">
-        <label className="flex items-center gap-2 rounded-md border bg-muted/20 p-3 text-sm">
+        <label className="flex items-center gap-2 rounded-xl border bg-muted/20 p-3 text-sm">
           <Checkbox
             name="altTermsToggle"
             checked={altTerms}

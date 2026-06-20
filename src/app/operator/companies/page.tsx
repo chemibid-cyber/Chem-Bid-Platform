@@ -16,8 +16,13 @@ export default async function OperatorCompanies() {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-2xl font-bold tracking-tight">Companies</h1>
-      <Card>
+      <div>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Companies</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Override GST verification, suspend, or reinstate any company on the platform.
+        </p>
+      </div>
+      <Card className="overflow-hidden">
         <Table>
           <TableHeader>
             <TableRow>
@@ -32,10 +37,12 @@ export default async function OperatorCompanies() {
             {rows.map((c) => (
               <TableRow key={c.id} className={c.suspended ? 'opacity-60' : ''}>
                 <TableCell>
-                  <div className="font-medium">{c.legalName}</div>
-                  {c.suspended ? <Badge variant="destructive">Suspended</Badge> : null}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">{c.legalName}</span>
+                    {c.suspended ? <Badge variant="destructive">Suspended</Badge> : null}
+                  </div>
                 </TableCell>
-                <TableCell className="font-mono text-xs">{c.gstin}</TableCell>
+                <TableCell className="font-mono text-xs tabular-nums">{c.gstin}</TableCell>
                 <TableCell>
                   <Badge
                     variant={
@@ -49,7 +56,7 @@ export default async function OperatorCompanies() {
                     {c.verificationStatus}
                   </Badge>
                 </TableCell>
-                <TableCell>{c.completionScore}</TableCell>
+                <TableCell className="tabular-nums">{c.completionScore}</TableCell>
                 <TableCell>
                   <div className="flex items-center justify-end gap-2">
                     {c.verificationStatus === 'pending' ? <GstOverrideButtons companyId={c.id} /> : null}

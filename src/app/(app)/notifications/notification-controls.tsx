@@ -46,14 +46,14 @@ export function NotificationItem({
       onClick={open}
       disabled={pending}
       className={cn(
-        'flex w-full items-start gap-3 rounded-lg border p-4 text-left transition-colors hover:bg-muted/40',
-        unread ? 'bg-primary/5 border-primary/20' : 'bg-card',
+        'flex w-full items-start gap-3 rounded-xl border p-4 text-left transition-colors hover:bg-muted/40',
+        unread ? 'border-brand/20 bg-brand/5' : 'border-transparent bg-card shadow-card',
       )}
     >
-      <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', unread ? 'bg-primary' : 'bg-transparent')} />
+      <span className={cn('mt-1.5 h-2 w-2 shrink-0 rounded-full', unread ? 'bg-brand' : 'bg-transparent')} />
       <span className="flex-1">
         <span className="block text-sm font-medium">{title}</span>
-        <span className="block text-xs text-muted-foreground">{time}</span>
+        <span className="block text-xs tabular-nums text-muted-foreground">{time}</span>
       </span>
       {pending ? <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /> : null}
     </button>

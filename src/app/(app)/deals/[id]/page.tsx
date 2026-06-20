@@ -22,7 +22,7 @@ function Field({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 text-sm font-medium">{value || '—'}</dd>
+      <dd className="mt-0.5 text-sm font-medium tabular-nums">{value || '—'}</dd>
     </div>
   );
 }
@@ -71,7 +71,7 @@ export default async function DealPage({ params }: { params: { id: string } }) {
       </Link>
 
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Deal Confirmation Record</h1>
+        <h1 className="font-display text-2xl font-bold tracking-tight">Deal Confirmation Record</h1>
         <Badge variant={d.status === 'disputed' ? 'destructive' : 'success'}>{d.status}</Badge>
       </div>
 
@@ -84,7 +84,7 @@ export default async function DealPage({ params }: { params: { id: string } }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{row.auctionName}</CardTitle>
+          <CardTitle className="font-display text-base tracking-tight">{row.auctionName}</CardTitle>
           <CardDescription>Confirmed {formatIST(d.confirmedAt)}</CardDescription>
         </CardHeader>
         <CardContent>
