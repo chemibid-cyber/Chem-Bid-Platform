@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { sql } from 'drizzle-orm';
 import { db } from '@/lib/db';
-import { companies, users, auctions, bids } from '@/lib/db/schema';
+import { companies, users, auctions, bids, catalogItems, blocks } from '@/lib/db/schema';
 import type { Company, User } from '@/lib/db/schema';
 
 export { db };
@@ -116,6 +116,42 @@ export async function seedAuction(
     })
     .returning();
   return a!;
+}
+
+/** A sales-catalog item — what runTargeting() matches sellers on. */
+export async function seedSalesCatalog(
+  over: Partial<typeof catalogItems.$inferInsert> & { companyId: string; ownerUserId: string },
+): Promise<typeof catalogItems.$inferSelect> {
+  const [item] = await db
+    .insert(catalogItems)
+    .values({
+      profileType: 'sales',
+      casNumber: '67-64-1',
+      name: 'Acetone',
+      isMixture: false,
+      roles: ['mfr'],
+      grade: 'trade',
+      minPurity: '99',
+      delisted: false,
+      ...over,
+    })
+    .returning();
+  return item!;
+}
+
+/** A block (buyer mutes a seller, or vice-versa) for a CAS or all. */
+export async function seedBlock(over: {
+  blockerCompanyId: string;
+  blockedCompanyId: string;
+  casNumber?: string | null;
+  scope?: 'this_cas' | 'all';
+}): Promise<void> {
+  await db.insert(blocks).values({
+    blockerCompanyId: over.blockerCompanyId,
+    blockedCompanyId: over.blockedCompanyId,
+    casNumber: over.casNumber ?? '67-64-1',
+    scope: over.scope ?? 'this_cas',
+  });
 }
 
 /** A targeted/placeholder bid row (gateState='notified', no pricing). */
