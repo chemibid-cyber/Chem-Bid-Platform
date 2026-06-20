@@ -140,33 +140,57 @@ export default async function ReviewPage({
   }
 
   return (
-    <div className="mx-auto max-w-4xl space-y-5">
-      <Link href={`/auctions/${auction.id}`} className="text-sm text-muted-foreground hover:text-foreground">
+    <div className="mx-auto max-w-4xl space-y-6">
+      <Link href={`/auctions/${auction.id}`} className="text-sm text-brand hover:underline">
         ← Back to auction
       </Link>
 
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Review bids — {auction.name}</h1>
-        <p className="text-muted-foreground">
-          {rows.length} bid{rows.length === 1 ? '' : 's'} · average total ₹{formatRate(avg)}/{unit}
-          {inStage2 && !closed ? ' · Stage-2 in progress' : ''}
-        </p>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs text-muted-foreground">
+            My auctions · <span className="text-foreground">Review bids</span>
+          </p>
+          <h1 className="mt-1 font-display text-3xl font-bold tracking-tight">Review bids — {auction.name}</h1>
+          <p className="mt-1.5 text-sm tabular-nums text-muted-foreground">
+            {rows.length} bid{rows.length === 1 ? '' : 's'} · average total ₹{formatRate(avg)}/{unit}
+            {inStage2 && !closed ? ' · Stage-2 in progress' : ''}
+          </p>
+        </div>
+        <div className="flex items-center gap-2.5 rounded-2xl bg-card px-4 py-2.5 shadow-card">
+          {closed ? (
+            <Badge variant="success">Closed</Badge>
+          ) : auction.status === 'awaiting_decision' ? (
+            <Badge variant="warning">Awaiting your decision</Badge>
+          ) : inStage2 ? (
+            <Badge variant="warning">Stage-2 in progress</Badge>
+          ) : (
+            <Badge variant="secondary">{auction.status}</Badge>
+          )}
+          <span className="text-sm tabular-nums text-muted-foreground">
+            {rows.length} bid{rows.length === 1 ? '' : 's'} · avg ₹{formatRate(avg)}/{unit}
+          </span>
+        </div>
       </div>
+
+      <p className="max-w-[78ch] text-sm leading-relaxed text-muted-foreground">
+        Verified sellers bid to your spec, ranked by the lower of their Stage-1 / Stage-2 rate. Send one
+        counter to every bidder for 24 hours, or confirm a winner straight from the leaderboard.
+      </p>
 
       {/* The buyer's own requested commercial terms (sellers quoted against these). */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Your requested terms</CardTitle>
+          <CardTitle className="font-display text-base tracking-tight">Your requested terms</CardTitle>
         </CardHeader>
         <CardContent>
-          <dl className="grid gap-4 text-sm sm:grid-cols-3">
+          <dl className="grid gap-x-9 gap-y-4 text-sm sm:grid-cols-3">
             <div>
-              <dt className="text-xs uppercase tracking-wide text-muted-foreground">Quantity</dt>
-              <dd className="mt-0.5 font-medium">{auction.quantity} {unit}</dd>
+              <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Quantity</dt>
+              <dd className="mt-1 font-medium tabular-nums">{auction.quantity} {unit}</dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-wide text-muted-foreground">Delivery terms</dt>
-              <dd className="mt-0.5 font-medium">
+              <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Delivery terms</dt>
+              <dd className="mt-1 font-medium">
                 {auction.logisticsBasis === 'other'
                   ? auction.deliveryTermsCustom ?? LOGISTICS_BASIS_LABEL.other
                   : LOGISTICS_BASIS_LABEL[auction.logisticsBasis] ?? auction.logisticsBasis}
@@ -174,8 +198,8 @@ export default async function ReviewPage({
             </div>
             {auction.paymentTerms ? (
               <div>
-                <dt className="text-xs uppercase tracking-wide text-muted-foreground">Payment terms</dt>
-                <dd className="mt-0.5 font-medium">
+                <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Payment terms</dt>
+                <dd className="mt-1 font-medium">
                   {auction.paymentTerms === 'other'
                     ? auction.paymentTermsCustom ?? PAYMENT_TERMS_LABEL.other
                     : PAYMENT_TERMS_LABEL[auction.paymentTerms] ?? auction.paymentTerms}
@@ -184,22 +208,22 @@ export default async function ReviewPage({
             ) : null}
             {auction.freightTerms ? (
               <div>
-                <dt className="text-xs uppercase tracking-wide text-muted-foreground">Freight handling</dt>
-                <dd className="mt-0.5 font-medium">
+                <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Freight handling</dt>
+                <dd className="mt-1 font-medium">
                   {FREIGHT_TERMS_LABEL[auction.freightTerms] ?? auction.freightTerms}
                 </dd>
               </div>
             ) : null}
             {auction.offerValidUntil ? (
               <div>
-                <dt className="text-xs uppercase tracking-wide text-muted-foreground">Offer valid until</dt>
-                <dd className="mt-0.5 font-medium">{formatIST(auction.offerValidUntil)}</dd>
+                <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Offer valid until</dt>
+                <dd className="mt-1 font-medium tabular-nums">{formatIST(auction.offerValidUntil)}</dd>
               </div>
             ) : null}
             {auction.supplyValidUntil ? (
               <div>
-                <dt className="text-xs uppercase tracking-wide text-muted-foreground">Supply valid until</dt>
-                <dd className="mt-0.5 font-medium">{formatIST(auction.supplyValidUntil)}</dd>
+                <dt className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">Supply valid until</dt>
+                <dd className="mt-1 font-medium tabular-nums">{formatIST(auction.supplyValidUntil)}</dd>
               </div>
             ) : null}
           </dl>
@@ -223,7 +247,10 @@ export default async function ReviewPage({
       {!closed ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Stage-2 counter (single round, all participants)</CardTitle>
+            <CardTitle className="font-display text-base tracking-tight">
+              Stage-2 counter{' '}
+              <span className="font-sans text-sm font-normal text-muted-foreground">— single round, all bidders</span>
+            </CardTitle>
             <CardDescription>
               Optional. Send one counter rate to every bidder for 24 hours, or settle directly from
               the leaderboard below (sorted by the lower of each seller&apos;s Stage-1 / Stage-2 rate).
@@ -239,7 +266,8 @@ export default async function ReviewPage({
             ) : (
               <div className="space-y-1 text-sm">
                 <p>
-                  Counter sent: <span className="font-semibold">₹{formatRate(auction.stage2Target)}/{unit}</span>{' '}
+                  Counter sent:{' '}
+                  <span className="font-display font-semibold tabular-nums">₹{formatRate(auction.stage2Target)}/{unit}</span>{' '}
                   <span className="text-muted-foreground">(material rate)</span>
                 </p>
                 <p className="text-muted-foreground">
@@ -255,20 +283,31 @@ export default async function ReviewPage({
 
       {/* Leaderboard */}
       <div className="space-y-3">
+        <h2 className="font-display text-sm font-semibold tracking-tight text-foreground">
+          Leaderboard <span className="font-sans font-normal text-muted-foreground">· ranked by effective rate</span>
+        </h2>
         {ranked.map((r, i) => {
           const isWinner = r.status === 'won';
+          // #1 (or the confirmed winner) gets the green-ring lowest treatment.
+          const isTop = i === 0 || isWinner;
           return (
-            <Card key={r.bidId} className={isWinner ? 'border-success' : undefined}>
-              <CardContent className="space-y-3 py-4">
+            <Card key={r.bidId} className={isTop ? 'ring-1 ring-success/40' : undefined}>
+              <CardContent className="space-y-3.5 py-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div className="flex items-start gap-3">
-                    <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-muted text-sm font-semibold">
+                  <div className="flex items-start gap-3.5">
+                    <span
+                      className={cn(
+                        'mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full font-display text-sm font-bold tabular-nums',
+                        isTop ? 'bg-success text-success-foreground' : 'bg-muted text-foreground',
+                      )}
+                    >
                       {i + 1}
                     </span>
                     <div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
                         <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <span className="font-semibold">{r.sellerName}</span>
+                        <span className="font-display font-semibold tracking-tight">{r.sellerName}</span>
+                        {i === 0 && !isWinner ? <Badge variant="success">Lowest</Badge> : null}
                         {isWinner ? <Badge variant="success">Winner</Badge> : null}
                         {r.status === 'lost' ? <Badge variant="secondary">Not selected</Badge> : null}
                         {blocked.has(r.sellerCompanyId) ? (
@@ -278,7 +317,7 @@ export default async function ReviewPage({
                           <Badge variant="brand">Agreed term change</Badge>
                         ) : null}
                       </div>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="mt-0.5 text-sm text-muted-foreground">
                         {r.contactFirst} {r.contactLast}
                         {r.contactDesignation ? `, ${r.contactDesignation}` : ''} · {r.contactEmail}
                         {r.contactPhone ? ` · ${r.contactPhone}` : ''}
@@ -286,7 +325,10 @@ export default async function ReviewPage({
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold">₹{formatRate(r.effective)}/{unit}</p>
+                    <p className="font-display text-2xl font-bold tabular-nums">
+                      ₹{formatRate(r.effective)}
+                      <span className="text-sm font-medium text-muted-foreground">/{unit}</span>
+                    </p>
                     <p className="text-xs text-muted-foreground">effective (lower of S1/S2)</p>
                   </div>
                 </div>
@@ -295,24 +337,24 @@ export default async function ReviewPage({
 
                 <div className="grid gap-3 text-sm sm:grid-cols-4">
                   <div>
-                    <p className="text-xs uppercase text-muted-foreground">Stage-1 total</p>
-                    <p className="font-medium">₹{formatRate(r.stage1Total)}/{unit}</p>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Stage-1 total</p>
+                    <p className="font-medium tabular-nums">₹{formatRate(r.stage1Total)}/{unit}</p>
+                    <p className="text-[11px] tabular-nums text-muted-foreground">
                       material {formatRate(r.stage1Basic)} + transport {formatRate(r.stage1Freight)} + tax{' '}
                       {formatRate(r.stage1Tax ?? 0)}
                     </p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase text-muted-foreground">Payment</p>
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Payment</p>
                     <p className="font-medium">{r.paymentTerms ? PAYMENT_TERMS_LABEL[r.paymentTerms] : '—'}</p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase text-muted-foreground">Lead time</p>
-                    <p className="font-medium">{r.leadTimeDays != null ? `${r.leadTimeDays} days` : '—'}</p>
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Lead time</p>
+                    <p className="font-medium tabular-nums">{r.leadTimeDays != null ? `${r.leadTimeDays} days` : '—'}</p>
                   </div>
                   <div>
-                    <p className="text-xs uppercase text-muted-foreground">Stage-2 (material)</p>
-                    <p className="font-medium">
+                    <p className="text-[11px] uppercase tracking-wide text-muted-foreground">Stage-2 (material)</p>
+                    <p className="font-medium tabular-nums">
                       {r.stage2Action === 'accept'
                         ? `Accepted ${formatRate(auction.stage2Target)}`
                         : r.stage2Action === 'final'
@@ -324,14 +366,14 @@ export default async function ReviewPage({
                               : '—'}
                     </p>
                     {r.stage2Rate ? (
-                      <p className="text-xs text-muted-foreground">
+                      <p className="text-[11px] tabular-nums text-muted-foreground">
                         all-in ₹{formatRate(stage2Total(Number(r.stage2Rate), r.stage1Freight, r.stage1Tax))}/{unit}
                       </p>
                     ) : null}
                   </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2 pt-0.5">
                   {r.coaOnDispatch ? (
                     <Badge variant="warning">COA on dispatch (MTO)</Badge>
                   ) : r.coaFileUrl ? (
@@ -354,6 +396,10 @@ export default async function ReviewPage({
           );
         })}
       </div>
+
+      <p className="text-xs text-muted-foreground">
+        Confirming closes the auction and records a Deal Confirmation Record of mutual intent under your terms.
+      </p>
 
       {closed && dealId ? (
         <Link href={`/deals/${dealId}`} className={cn(buttonVariants({ variant: 'outline' }))}>

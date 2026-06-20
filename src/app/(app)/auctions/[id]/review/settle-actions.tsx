@@ -102,13 +102,13 @@ export function BlockSellerButton({
         type="button"
         variant="ghost"
         size="sm"
-        className="text-destructive"
+        className="text-destructive hover:text-destructive"
         onClick={() => {
           reset();
           setOpen(true);
         }}
       >
-        <Ban className="h-4 w-4" /> Block
+        <Ban className="h-4 w-4" /> Block seller
       </Button>
       <ConfirmDialog
         open={open}

@@ -3,7 +3,7 @@
 import { useFormState } from 'react-dom';
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { BadgeCheck, Clock, Loader2, Search } from 'lucide-react';
+import { BadgeCheck, Clock, Gavel, Loader2, Search } from 'lucide-react';
 import { signUpAction, verifyGstinAction, type GstPreview } from '../actions';
 import { SubmitButton } from '@/components/submit-button';
 import { Button } from '@/components/ui/button';
@@ -30,9 +30,14 @@ export function SignupForm() {
   const confirmed = preview?.ok === true;
 
   return (
-    <Card>
+    <Card className="mx-auto max-w-lg">
       <CardHeader>
-        <CardTitle className="text-xl">Create your company account</CardTitle>
+        <span className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-[13px] bg-graphite text-live">
+          <Gavel className="h-[22px] w-[22px]" />
+        </span>
+        <CardTitle className="font-display text-2xl tracking-tight">
+          Create your company account
+        </CardTitle>
         <CardDescription>
           Your identity is anchored to a verified GSTIN. The first person to register becomes the
           Admin.
@@ -204,7 +209,7 @@ export function SignupForm() {
 
         <p className="mt-4 text-center text-sm text-muted-foreground">
           Already registered?{' '}
-          <Link href="/login" className="font-medium text-foreground hover:underline">
+          <Link href="/login" className="font-semibold text-brand hover:underline">
             Log in
           </Link>
         </p>

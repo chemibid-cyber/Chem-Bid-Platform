@@ -93,7 +93,7 @@ function ProposedSummary({ proposal }: { proposal: CurrentProposal }) {
     rows.push({ label: 'Supply valid until', value: formatIST(proposal.proposedSupplyValidUntil) });
 
   return (
-    <div className="rounded-md border bg-muted/30 p-3 text-sm">
+    <div className="rounded-xl bg-accent p-4 text-sm">
       <p className="mb-2 font-medium">Your proposed changes</p>
       {rows.length === 0 ? (
         <p className="text-muted-foreground">No field changes — note only.</p>
@@ -102,7 +102,7 @@ function ProposedSummary({ proposal }: { proposal: CurrentProposal }) {
           {rows.map((r) => (
             <div key={r.label}>
               <dt className="text-xs uppercase tracking-wide text-muted-foreground">{r.label}</dt>
-              <dd className="font-medium">{r.value}</dd>
+              <dd className="font-medium tabular-nums">{r.value}</dd>
             </div>
           ))}
         </dl>

@@ -44,12 +44,12 @@ export function Stage2Respond({
 
   return (
     <div className="space-y-3">
-      <div className="rounded-md border bg-muted/30 p-3 text-sm">
+      <div className="rounded-xl bg-accent p-4 text-sm">
         Buyer&apos;s counter on the <strong>material rate</strong>:{' '}
-        <span className="font-semibold">₹{targetRate}/{unit}</span>
+        <span className="font-semibold tabular-nums">₹{targetRate}/{unit}</span>
         <span className="ml-2 text-muted-foreground">
-          (your Stage-1 material: ₹{stage1Material}/{unit} · your transport + tax of ₹
-          {formatRate(addOn)}/{unit} carry over unchanged)
+          (your Stage-1 material: <span className="tabular-nums">₹{stage1Material}/{unit}</span> · your transport + tax of{' '}
+          <span className="tabular-nums">₹{formatRate(addOn)}/{unit}</span> carry over unchanged)
         </span>
       </div>
       {existing ? (
@@ -69,7 +69,7 @@ export function Stage2Respond({
       <div className="flex flex-wrap gap-2">
         <Button disabled={pending} onClick={() => respond('accept')}>
           {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
-          Accept ₹{targetRate} (all-in ₹{formatRate(acceptAllIn)})
+          <span className="tabular-nums">Accept ₹{targetRate} (all-in ₹{formatRate(acceptAllIn)})</span>
         </Button>
         <Button variant="outline" disabled={pending} onClick={() => respond('reject')}>
           Reject (keep Stage-1)
@@ -80,10 +80,10 @@ export function Stage2Respond({
       </div>
 
       {showFinal ? (
-        <div className="flex flex-wrap items-end gap-2 rounded-md border p-3">
+        <div className="flex flex-wrap items-end gap-2 rounded-xl bg-accent p-4">
           <div className="space-y-1">
             <Label htmlFor="finalRate" className="text-xs">
-              Final material rate (≤ ₹{stage1Material})
+              Final material rate (≤ <span className="tabular-nums">₹{stage1Material}</span>)
             </Label>
             <DecimalInput
               id="finalRate"
@@ -95,7 +95,7 @@ export function Stage2Respond({
             />
           </div>
           {finalRate ? (
-            <p className="pb-2 text-xs text-muted-foreground">
+            <p className="pb-2 text-xs tabular-nums text-muted-foreground">
               All-in: ₹{formatRate(finalAllIn)}/{unit}
             </p>
           ) : null}

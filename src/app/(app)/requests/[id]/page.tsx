@@ -30,7 +30,6 @@ import { RankWidget } from './rank-widget';
 import { Stage2Respond } from './stage2-respond';
 import { CounterProposalForm, type CurrentProposal } from './counter-form';
 import { ReportButton } from '@/components/app/report-button';
-import { Hint } from '@/components/ui/help';
 
 export const metadata = { title: 'Requirement' };
 
@@ -38,7 +37,7 @@ function Detail({ label, value }: { label: string; value: string }) {
   return (
     <div>
       <dt className="text-xs uppercase tracking-wide text-muted-foreground">{label}</dt>
-      <dd className="mt-0.5 text-sm font-medium">{value || '—'}</dd>
+      <dd className="mt-0.5 text-sm font-medium tabular-nums">{value || '—'}</dd>
     </div>
   );
 }
@@ -145,7 +144,7 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
 
   return (
     <div className="mx-auto max-w-3xl space-y-5">
-      <Link href="/requests" className="text-sm text-muted-foreground hover:text-foreground">
+      <Link href="/requests" className="text-sm text-muted-foreground transition-colors hover:text-foreground">
         ← Back to requests
       </Link>
 
@@ -156,13 +155,13 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
         </Alert>
       ) : null}
 
-      <div className="flex flex-wrap items-start justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight">{auction.name}</h1>
+            <h1 className="font-display text-3xl font-bold tracking-tight">{auction.name}</h1>
             {auction.blind ? <Badge variant="outline">Blind</Badge> : null}
           </div>
-          <p className="text-muted-foreground">
+          <p className="mt-1 tabular-nums text-muted-foreground">
             {auction.casNumber ? `CAS ${auction.casNumber}` : 'Custom mixture'} ·{' '}
             {open
               ? `Closes: ${formatIST(auction.closesAt)} (in ${timeRemaining(auction.closesAt)})`
@@ -174,9 +173,11 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
 
       {/* Buyer identity card — identity + contact only inside the post-accept gate */}
       <Card>
-        <CardContent className="space-y-3 py-4">
+        <CardContent className="space-y-3 py-5">
           <div className="flex items-center gap-3">
-            <Building2 className="h-5 w-5 text-muted-foreground" />
+            <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-accent text-muted-foreground">
+              <Building2 className="h-5 w-5" />
+            </span>
             <div className="flex-1">
               <p className="font-medium">{buyerName}</p>
               {buyerActor ? (
@@ -211,7 +212,7 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
       {/* Requirements (pricing locked pre-accept) */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Requirement</CardTitle>
+          <CardTitle className="font-display text-lg tracking-tight">Requirement</CardTitle>
         </CardHeader>
         <CardContent>
           <dl className="grid gap-4 sm:grid-cols-2">
@@ -282,7 +283,7 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
       {stage2Active && bid.stage1Total ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Stage-2 counter-offer</CardTitle>
+            <CardTitle className="font-display text-lg tracking-tight">Stage-2 counter-offer</CardTitle>
           </CardHeader>
           <CardContent>
             <Stage2Respond
@@ -301,7 +302,7 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
       {accepted && open ? (
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Propose changes to the requirement</CardTitle>
+            <CardTitle className="font-display text-lg tracking-tight">Propose changes to the requirement</CardTitle>
           </CardHeader>
           <CardContent>
             <CounterProposalForm
@@ -331,8 +332,8 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
       ) : open && !accepted && bid.gateState !== 'blocked' ? (
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-base">
-              <Lock className="h-4 w-4" /> Pricing is locked until you accept
+            <CardTitle className="flex items-center gap-2 font-display text-lg tracking-tight">
+              <Lock className="h-4 w-4 text-brand" /> Pricing is locked until you accept
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -341,11 +342,14 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
               <IgnoreButton auctionId={auction.id} ignored={bid.gateState === 'ignored'} />
               <BlockControls auctionId={auction.id} />
             </div>
-            <Hint>
-              Accepting reveals the buyer&apos;s identity to you and opens the quote form. Until
-              then the buyer can&apos;t see who you are — and you stay anonymous to rival sellers
-              throughout.
-            </Hint>
+            <div className="flex items-start gap-3 rounded-xl bg-accent p-4">
+              <Lock className="mt-0.5 h-4 w-4 shrink-0 text-brand" />
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Accepting reveals the buyer&apos;s identity to you and opens the quote form. Until
+                then the buyer can&apos;t see who you are — and you stay anonymous to rival sellers
+                throughout.
+              </p>
+            </div>
           </CardContent>
         </Card>
       ) : open && accepted ? (
@@ -353,7 +357,7 @@ export default async function RequestDetailPage({ params }: { params: { id: stri
           {auction.blind && bid.stage1Total ? <RankWidget auctionId={auction.id} /> : null}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">
+              <CardTitle className="font-display text-lg tracking-tight">
                 {bid.stage1Total ? 'Your bid' : 'Submit your bid'} — full quantity
               </CardTitle>
             </CardHeader>

@@ -49,10 +49,10 @@ export default async function RequestsPage() {
           <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-semibold">{r.name}</span>
-                {r.casNumber ? <span className="text-sm text-muted-foreground">CAS {r.casNumber}</span> : null}
+                <span className="font-display font-semibold tracking-tight">{r.name}</span>
+                {r.casNumber ? <span className="text-sm tabular-nums text-muted-foreground">CAS {r.casNumber}</span> : null}
               </div>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-sm tabular-nums text-muted-foreground">
                 {r.quantity} {UNIT_LABEL[r.unit] ?? r.unit} ·{' '}
                 {isActive(r.status)
                   ? `Closes: ${formatIST(r.closesAt)} (in ${timeRemaining(r.closesAt)})`
@@ -73,7 +73,7 @@ export default async function RequestsPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold tracking-tight">Incoming requests</h1>
+      <h1 className="font-display text-3xl font-bold tracking-tight">Incoming requests</h1>
 
       {rows.length === 0 ? (
         <Card>

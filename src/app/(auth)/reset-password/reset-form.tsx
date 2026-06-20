@@ -2,6 +2,7 @@
 
 import { useFormState } from 'react-dom';
 import Link from 'next/link';
+import { Gavel } from 'lucide-react';
 import { updatePasswordAction } from '../actions';
 import { SubmitButton } from '@/components/submit-button';
 import { PasswordInput } from '@/components/ui/password-input';
@@ -22,9 +23,14 @@ export function ResetPasswordForm({ tokenHash, type }: { tokenHash: string; type
   const linkExpired = Boolean(state?.error && /expired/i.test(state.error));
 
   return (
-    <Card>
+    <Card className="mx-auto max-w-md">
       <CardHeader>
-        <CardTitle className="text-xl">Choose a new password</CardTitle>
+        <span className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-[13px] bg-graphite text-live">
+          <Gavel className="h-[22px] w-[22px]" />
+        </span>
+        <CardTitle className="font-display text-2xl tracking-tight">
+          Choose a new password
+        </CardTitle>
         <CardDescription>Enter a strong password to finish resetting.</CardDescription>
       </CardHeader>
       <CardContent>

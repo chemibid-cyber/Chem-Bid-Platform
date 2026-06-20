@@ -106,7 +106,7 @@ export function BidForm({
         ) : (
           <div className="space-y-2">
             <Label>Transport</Label>
-            <p className="flex h-10 items-center text-sm text-muted-foreground">
+            <p className="flex h-10 items-center rounded-[10px] bg-accent px-3 text-sm leading-tight text-muted-foreground">
               Ex-Works — buyer arranges pickup.
             </p>
             <input type="hidden" name="freight" value="0" />
@@ -135,9 +135,9 @@ export function BidForm({
         </div>
       </div>
 
-      <div className="rounded-md border bg-muted/30 p-3 text-sm">
-        Total rate:{' '}
-        <span className="text-base font-semibold">
+      <div className="rounded-xl bg-accent p-4 text-sm">
+        <span className="text-muted-foreground">Total rate</span>{' '}
+        <span className="font-display text-lg font-bold tabular-nums text-foreground">
           ₹{formatRate(total)}/{unitLabel}
         </span>{' '}
         <span className="text-muted-foreground">
@@ -170,17 +170,18 @@ export function BidForm({
       </div>
 
       <div className="space-y-2">
-        <div className="flex items-center gap-2 rounded-md border bg-muted/30 p-3">
+        <label className="flex cursor-pointer items-start gap-3 rounded-xl bg-accent p-4" htmlFor="coaOnDispatch">
           <Checkbox
             id="coaOnDispatch"
             name="coaOnDispatch"
             checked={coaOnDispatch}
             onChange={(e) => setCoaOnDispatch(e.target.checked)}
+            className="mt-0.5"
           />
-          <Label htmlFor="coaOnDispatch" className="font-normal">
+          <Label htmlFor="coaOnDispatch" className="cursor-pointer font-normal leading-relaxed">
             COA on dispatch (make-to-order) — I&apos;ll provide the Certificate of Analysis at dispatch
           </Label>
-        </div>
+        </label>
         {!coaOnDispatch ? (
           <div className="space-y-1">
             <Label htmlFor="coaFile">Certificate of Analysis</Label>

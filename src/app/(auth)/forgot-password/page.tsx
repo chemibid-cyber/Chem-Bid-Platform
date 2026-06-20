@@ -2,6 +2,7 @@
 
 import { useFormState } from 'react-dom';
 import Link from 'next/link';
+import { Gavel } from 'lucide-react';
 import { requestResetAction } from '../actions';
 import { SubmitButton } from '@/components/submit-button';
 import { Input } from '@/components/ui/input';
@@ -13,9 +14,12 @@ export default function ForgotPasswordPage() {
   const [state, action] = useFormState(requestResetAction, null);
 
   return (
-    <Card>
+    <Card className="mx-auto max-w-md">
       <CardHeader>
-        <CardTitle className="text-xl">Reset your password</CardTitle>
+        <span className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-[13px] bg-graphite text-live">
+          <Gavel className="h-[22px] w-[22px]" />
+        </span>
+        <CardTitle className="font-display text-2xl tracking-tight">Reset your password</CardTitle>
         <CardDescription>We&apos;ll email you a link to choose a new one.</CardDescription>
       </CardHeader>
       <CardContent>
@@ -36,7 +40,7 @@ export default function ForgotPasswordPage() {
           always open the most recent link.
         </p>
         <p className="mt-4 text-center text-sm text-muted-foreground">
-          <Link href="/login" className="font-medium text-foreground hover:underline">
+          <Link href="/login" className="font-semibold text-brand hover:underline">
             Back to log in
           </Link>
         </p>
