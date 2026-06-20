@@ -17,7 +17,7 @@ export function ModeToggle({ mode }: { mode: Mode }) {
   return (
     <div
       className={cn(
-        'inline-flex items-center rounded-lg border bg-muted/40 p-0.5 text-sm',
+        'inline-flex items-center rounded-lg bg-secondary p-0.5 text-sm',
         pending && 'opacity-70',
       )}
       role="group"
@@ -28,7 +28,7 @@ export function ModeToggle({ mode }: { mode: Mode }) {
         onClick={() => select('buy')}
         className={cn(
           'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition-colors',
-          mode === 'buy' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
+          mode === 'buy' ? 'bg-graphite text-white' : 'text-muted-foreground hover:text-foreground',
         )}
       >
         <ShoppingCart className="h-4 w-4" />
@@ -39,7 +39,7 @@ export function ModeToggle({ mode }: { mode: Mode }) {
         onClick={() => select('sell')}
         className={cn(
           'inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 font-medium transition-colors',
-          mode === 'sell' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground',
+          mode === 'sell' ? 'bg-graphite text-white' : 'text-muted-foreground hover:text-foreground',
         )}
       >
         <Tag className="h-4 w-4" />

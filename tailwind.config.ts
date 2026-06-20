@@ -17,6 +17,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         sans: ['var(--font-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+        display: ['var(--font-display)', 'var(--font-sans)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
       },
       colors: {
         border: 'hsl(var(--border))',
@@ -24,6 +25,8 @@ const config: Config = {
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         foreground: 'hsl(var(--foreground))',
+        graphite: 'hsl(var(--graphite))',
+        live: 'hsl(var(--live))',
         brand: {
           DEFAULT: 'hsl(var(--brand))',
           foreground: 'hsl(var(--brand-foreground))',
@@ -76,6 +79,9 @@ const config: Config = {
         DEFAULT: '0 1px 3px 0 rgb(40 33 26 / 0.06), 0 1px 2px -1px rgb(40 33 26 / 0.05)',
         md: '0 6px 16px -4px rgb(40 33 26 / 0.08), 0 2px 6px -2px rgb(40 33 26 / 0.06)',
         lg: '0 14px 32px -8px rgb(40 33 26 / 0.12), 0 4px 10px -4px rgb(40 33 26 / 0.07)',
+        /* signature soft-lift card shadow (graphite-tinted), per the design language */
+        card: '0 1px 2px rgb(28 38 34 / 0.05), 0 16px 32px -26px rgb(28 38 34 / 0.40)',
+        'card-lg': '0 1px 2px rgb(28 38 34 / 0.05), 0 28px 60px -34px rgb(28 38 34 / 0.55)',
         none: 'none',
       },
       keyframes: {

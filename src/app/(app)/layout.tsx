@@ -22,7 +22,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <Toaster>
       <NotificationToaster />
-      <div className="min-h-screen bg-muted/20">
+      <div className="min-h-screen bg-background">
         <AppHeader user={user} company={company} mode={mode} unreadCount={unread} />
 
       {company.verificationStatus !== 'verified' ? (

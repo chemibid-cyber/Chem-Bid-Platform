@@ -3,47 +3,57 @@
 @tailwind utilities;
 
 /*
- * Design tokens — see DESIGN.md. Calm, premium, warm-tinted neutrals with a
- * single teal brand accent. HSL channels so Tailwind can alpha-blend them.
+ * Design tokens — Chemical Auction design language ("the trading desk").
+ * Subject-true colour: graphite ink, one assay-green for "verified / proceed",
+ * amber = caution, brick = stop. Lab-datasheet white surfaces on mineral paper.
+ * HSL channels so Tailwind can alpha-blend them.
  */
 @layer base {
   :root {
-    --background: 40 24% 98%; /* warm near-white */
-    --foreground: 30 14% 15%; /* warm ink, not pure black */
+    --background: 120 10% 96%; /* mineral paper #F4F6F4 */
+    --foreground: 156 16% 13%; /* graphite #1C2622 */
 
-    --card: 0 0% 100%;
-    --card-foreground: 30 14% 15%;
+    --card: 0 0% 100%; /* lab-datasheet white */
+    --card-foreground: 156 16% 13%;
     --popover: 0 0% 100%;
-    --popover-foreground: 30 14% 15%;
+    --popover-foreground: 156 16% 13%;
 
-    --primary: 28 12% 17%; /* deep warm ink — premium, calm */
-    --primary-foreground: 40 30% 98%;
+    --primary: 156 16% 13%; /* graphite — structural ink (avatars, dark pills) */
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 38 18% 94%;
-    --secondary-foreground: 28 12% 25%;
+    --secondary: 120 10% 94%;
+    --secondary-foreground: 156 16% 20%;
 
-    --muted: 38 18% 95%;
-    --muted-foreground: 30 7% 44%;
+    --muted: 120 11% 95%;
+    --muted-foreground: 129 4% 44%; /* #6C736D */
 
-    --accent: 38 20% 93%; /* hover/fill surface */
-    --accent-foreground: 28 12% 20%;
+    --accent: 120 12% 93%; /* hover/fill surface */
+    --accent-foreground: 156 16% 18%;
 
-    /* single brand accent — teal */
-    --brand: 182 52% 33%;
-    --brand-foreground: 180 40% 98%;
+    /* the one action colour — assay green #10663E */
+    --brand: 152 73% 23%;
+    --brand-foreground: 0 0% 100%;
 
-    --success: 158 52% 35%;
+    --success: 152 73% 23%; /* verified / proceed — same green */
     --success-foreground: 0 0% 100%;
-    --warning: 33 88% 46%;
-    --warning-foreground: 36 60% 11%;
-    --destructive: 4 64% 48%;
+    --warning: 33 78% 39%; /* hazard amber #B26B16 */
+    --warning-foreground: 0 0% 100%;
+    --destructive: 5 59% 41%; /* brick #A6362B */
     --destructive-foreground: 0 0% 100%;
 
-    --border: 36 16% 90%;
-    --input: 34 16% 87%;
-    --ring: 182 52% 33%; /* teal focus */
+    --border: 120 7% 91%; /* #E7EAE7 — crisp hairline */
+    --input: 120 9% 84%; /* #D3DAD3 — field border */
+    --ring: 152 73% 23%; /* green focus */
 
-    --radius: 0.75rem;
+    /* signature accents */
+    --graphite: 156 16% 13%; /* #1C2622 — the dark "one bold moment" surface */
+    --live: 153 56% 52%; /* #3EC98A — live pulse / logo mark */
+
+    --radius: 0.625rem; /* 10px base — inputs & buttons */
+
+    /* typefaces: Cabinet Grotesk for authority, General Sans for data */
+    --font-sans: 'General Sans', ui-sans-serif, system-ui, -apple-system, sans-serif;
+    --font-display: 'Cabinet Grotesk', 'General Sans', ui-sans-serif, system-ui, sans-serif;
   }
 
   .dark {
@@ -81,18 +91,46 @@
   }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings:
-      'cv11' 1,
-      'ss01' 1,
-      'calt' 1;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
+  }
+  /* Display face for authority — headlines and the big numbers. */
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    letter-spacing: -0.02em;
   }
   /* Money + quantities line up in columns. */
   .tabular {
     font-variant-numeric: tabular-nums;
   }
+  ::selection {
+    background: hsl(var(--brand) / 0.16);
+  }
   /* Calmer default focus — brand ring, no harsh outline. */
   :focus-visible {
     outline: none;
+  }
+  /* Signature "live" pulse used on the Blind Board rank ticker. */
+  @keyframes livepulse {
+    0%,
+    100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.3;
+      transform: scale(0.7);
+    }
+  }
+  .livedot {
+    animation: livepulse 1.7s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .livedot {
+      animation: none;
+    }
   }
 }

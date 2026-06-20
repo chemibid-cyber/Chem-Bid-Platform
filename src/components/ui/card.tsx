@@ -6,7 +6,9 @@ export const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDi
     <div
       ref={ref}
       className={cn(
-        'rounded-xl border border-border/70 bg-card text-card-foreground shadow-sm',
+        // Design rule: a soft shadow OR a crisp border, never both. Elevated
+        // white card on mineral paper → the signature soft-lift shadow.
+        'rounded-2xl bg-card text-card-foreground shadow-card',
         className,
       )}
       {...props}

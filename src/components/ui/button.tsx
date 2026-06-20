@@ -7,12 +7,15 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground shadow-sm hover:bg-primary/90',
+        // Primary action = the one assay-green. (Sign in, Modify bid, Start…)
+        default: 'bg-brand text-brand-foreground shadow-sm hover:bg-brand/90',
         brand: 'bg-brand text-brand-foreground shadow-sm hover:bg-brand/90',
+        // Graphite — the dark structural CTA (used inside the Blind Board area).
+        graphite: 'bg-graphite text-white shadow-sm hover:bg-graphite/90',
         destructive:
           'bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90',
         outline:
-          'border border-input bg-card text-foreground shadow-xs hover:bg-accent hover:text-accent-foreground',
+          'border border-input bg-card text-foreground hover:bg-accent hover:text-accent-foreground',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/70',
         ghost: 'hover:bg-accent hover:text-accent-foreground',
         link: 'text-brand underline-offset-4 hover:underline',

@@ -97,11 +97,15 @@ export function AppHeader({
   if (user.isAdmin) items.push({ href: '/members', label: 'Members' });
 
   return (
-    <header className="sticky top-0 z-30 border-b bg-background/95 backdrop-blur">
+    <header className="sticky top-0 z-30 border-b border-border bg-card">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5">
-        <Link href="/dashboard" className="flex items-center gap-2 font-semibold">
-          <Gavel className="h-5 w-5" />
-          <span className="hidden sm:inline">Chemical Auction</span>
+        <Link href="/dashboard" className="flex items-center gap-2">
+          <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-graphite text-live">
+            <Gavel className="h-4 w-4" />
+          </span>
+          <span className="hidden font-display text-[15px] font-bold tracking-tight sm:inline">
+            Chemical Auction
+          </span>
         </Link>
 
         <div className="flex min-w-0 items-center gap-2">
