@@ -5,7 +5,6 @@ import { raiseDisputeAction, type DealFormState } from '../actions';
 import { SubmitButton } from '@/components/submit-button';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { FileDropzone } from '@/components/ui/file-dropzone';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 

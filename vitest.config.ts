@@ -10,6 +10,15 @@ export default defineConfig({
       reporter: ['text', 'json-summary'],
       include: ['src/lib/**/*.ts'],
       exclude: ['src/lib/db/**', 'src/lib/**/*.test.ts'],
+      // Ratchet floor — locks the current measured coverage so CI fails on a
+      // regression. Raise these as P1 (integration) + P2 (E2E) tests land;
+      // target ≥35% lines per CLAUDE.md once server actions are covered.
+      thresholds: {
+        lines: 22,
+        statements: 22,
+        functions: 55,
+        branches: 78,
+      },
     },
   },
   resolve: {
