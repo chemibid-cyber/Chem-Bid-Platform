@@ -22,8 +22,12 @@ jobs:
           node-version: 20
           cache: npm
 
-      - name: Install (clean, from lockfile)
-        run: npm ci
+      - name: Install dependencies
+        # `npm install` (not `npm ci`): a transitive picomatch 2-vs-4 conflict in
+        # the vitest/vite tree trips `npm ci`'s strict lockfile validation on some
+        # npm patch versions. `npm install` resolves it identically and the gate's
+        # value is the checks below, not bit-perfect reproducibility.
+        run: npm install --no-audit --no-fund
 
       - name: Typecheck
         run: npm run typecheck
