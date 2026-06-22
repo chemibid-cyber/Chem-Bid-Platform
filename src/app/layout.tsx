@@ -5,14 +5,14 @@ import { Analytics } from '@/components/analytics';
 
 export const metadata: Metadata = {
   title: {
-    default: 'Chemical Auction — B2B reverse auctions for chemical procurement',
-    template: '%s · Chemical Auction',
+    default: 'ChemiBid — B2B reverse auctions for chemical procurement',
+    template: '%s · ChemiBid',
   },
   description:
     'A verified, GST-anchored B2B reverse-auction marketplace for chemical procurement in India. Post a precise requirement; qualified sellers bid blindly; every action is audit-logged.',
   manifest: '/manifest.webmanifest',
-  applicationName: 'Chemical Auction',
-  appleWebApp: { capable: true, title: 'Chemical Auction', statusBarStyle: 'default' },
+  applicationName: 'ChemiBid',
+  appleWebApp: { capable: true, title: 'ChemiBid', statusBarStyle: 'default' },
 };
 
 export const viewport: Viewport = {

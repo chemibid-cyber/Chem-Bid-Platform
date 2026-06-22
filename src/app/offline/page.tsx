@@ -8,7 +8,7 @@ export default function OfflinePage() {
       <WifiOff className="h-10 w-10 text-muted-foreground" />
       <h1 className="mt-4 text-xl font-semibold">You&apos;re offline</h1>
       <p className="mt-2 max-w-sm text-sm text-muted-foreground">
-        Chemical Auction needs a connection for live bidding. Reconnect and we&apos;ll pick up
+        ChemiBid needs a connection for live bidding. Reconnect and we&apos;ll pick up
         where you left off — your auction timers are server-side, so nothing is lost.
       </p>
     </div>

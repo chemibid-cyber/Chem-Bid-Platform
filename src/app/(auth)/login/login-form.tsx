@@ -2,9 +2,10 @@
 
 import { useFormState } from 'react-dom';
 import Link from 'next/link';
-import { Gavel, Check } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { logInAction } from '../actions';
 import { AuthFooter } from '../auth-footer';
+import { LogoMark, LogoTile } from '@/components/brand/logo';
 import { SubmitButton } from '@/components/submit-button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
@@ -20,10 +21,10 @@ export function LoginForm({ initialError }: { initialError?: string }) {
       <div className="relative hidden flex-col justify-between bg-graphite p-10 text-white lg:flex xl:p-14">
         <div className="flex items-center gap-2.5">
           <span className="inline-flex h-8 w-8 items-center justify-center rounded-[9px] bg-brand text-white">
-            <Gavel className="h-[17px] w-[17px]" />
+            <LogoMark className="h-[17px] w-[17px]" />
           </span>
           <span className="font-display text-lg font-bold tracking-tight text-white">
-            Chemical Auction
+            ChemiBid
           </span>
         </div>
         <div>
@@ -47,9 +48,7 @@ export function LoginForm({ initialError }: { initialError?: string }) {
         <div className="flex flex-1 items-center justify-center px-6 py-10 sm:px-10">
           <div className="w-full max-w-sm">
             {/* Brand mark for small screens (the dark panel is hidden under lg) */}
-            <span className="mb-6 inline-flex h-11 w-11 items-center justify-center rounded-[13px] bg-graphite text-live lg:hidden">
-              <Gavel className="h-[22px] w-[22px]" />
-            </span>
+            <LogoTile className="mb-6 h-11 w-11 rounded-[13px] lg:hidden" />
             <h1 className="font-display text-2xl font-bold tracking-tight">Log in</h1>
             <p className="mt-1 text-sm text-muted-foreground">
               Welcome back. Enter your corporate email.

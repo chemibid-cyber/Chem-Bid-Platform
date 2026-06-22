@@ -161,7 +161,7 @@ export async function toPdf(data: ExportData): Promise<Uint8Array> {
     y -= opts.gap ?? 16;
   };
 
-  line('Chemical Auction — Record', { size: 16, bold: true, gap: 24 });
+  line('ChemiBid — Record', { size: 16, bold: true, gap: 24 });
   line(`Auction: ${data.auctionName}`, { bold: true });
   line(`CAS: ${data.casNumber ?? 'N/A (mixture)'}`);
   line(`Quantity: ${data.quantity} ${data.unit}`);

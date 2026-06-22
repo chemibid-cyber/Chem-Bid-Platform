@@ -1,6 +1,6 @@
 {
-  "name": "Chemical Auction",
-  "short_name": "ChemAuction",
+  "name": "ChemiBid",
+  "short_name": "ChemiBid",
   "description": "B2B chemical reverse-auction marketplace for India.",
   "start_url": "/dashboard",
   "scope": "/",

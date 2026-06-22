@@ -3,7 +3,8 @@
 import { useFormState } from 'react-dom';
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { BadgeCheck, Clock, Gavel, Loader2, Search } from 'lucide-react';
+import { BadgeCheck, Clock, Loader2, Search } from 'lucide-react';
+import { LogoTile } from '@/components/brand/logo';
 import { signUpAction, verifyGstinAction, type GstPreview } from '../actions';
 import { SubmitButton } from '@/components/submit-button';
 import { Button } from '@/components/ui/button';
@@ -32,9 +33,7 @@ export function SignupForm() {
   return (
     <Card className="mx-auto max-w-lg">
       <CardHeader>
-        <span className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-[13px] bg-graphite text-live">
-          <Gavel className="h-[22px] w-[22px]" />
-        </span>
+        <LogoTile className="mb-3 h-11 w-11 rounded-[13px]" />
         <CardTitle className="font-display text-2xl tracking-tight">
           Create your company account
         </CardTitle>

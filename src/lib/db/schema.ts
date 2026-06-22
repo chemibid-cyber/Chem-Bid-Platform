@@ -1,5 +1,5 @@
 /**
- * Drizzle schema — the data spine for the B2B Chemical Auction Platform.
+ * Drizzle schema — the data spine for the B2B ChemiBid Platform.
  *
  * Conventions:
  *  - Every table has `created_at` (timestamptz, default now()).

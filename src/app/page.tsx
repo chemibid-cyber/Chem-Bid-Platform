@@ -1,114 +1,255 @@
 import Link from 'next/link';
-import { ShieldCheck, Gavel, FileLock2, Search, ArrowRight } from 'lucide-react';
+import { ShieldCheck, Search, FileLock2, ArrowRight, Check } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
+import { LogoMark, LogoTile } from '@/components/brand/logo';
+import { Reveal } from '@/components/brand/reveal';
 import { cn } from '@/lib/utils';
 
 const STEPS = [
-  { n: 1, title: 'Post a requirement', body: 'CAS, purity, quantity, packing, deadline. Under five minutes.' },
-  { n: 2, title: 'Sellers bid blindly', body: 'Only qualified sellers are invited. Each sees just their own rank — never a rival’s price.' },
-  { n: 3, title: 'Settle & record', body: 'Negotiate one round, confirm a single winner, and keep a tamper-proof record.' },
-];
-
-const FEATURES = [
   {
-    icon: ShieldCheck,
-    title: 'GST-verified identity',
-    body: 'Every counterparty is a real, tax-registered business. Legal name and address come from the GST network and stay locked.',
+    n: 1,
+    title: 'Post a requirement',
+    body: 'CAS number, purity, quantity, packing, deadline. Under five minutes.',
   },
   {
-    icon: Gavel,
-    title: 'Blind reverse auctions',
-    body: 'Qualified sellers compete to your exact spec. Sellers see only their own rank, never a competitor’s price or identity.',
+    n: 2,
+    title: 'Sellers bid blindly',
+    body: 'Only qualified sellers are invited. Each sees just their own rank — never a rival’s price.',
   },
   {
-    icon: Search,
-    title: 'CAS-precise targeting',
-    body: 'Requirements are anchored to a CAS number, purity and quantity, so only sellers who actually carry the product get notified.',
-  },
-  {
-    icon: FileLock2,
-    title: 'Append-only audit trail',
-    body: 'Every bid, counter, accept and close is recorded immutably — always a clear record of why a deal was struck.',
+    n: 3,
+    title: 'Settle & record',
+    body: 'Negotiate one round, confirm a single winner, keep a tamper-proof record.',
   },
 ];
 
 export default function LandingPage() {
   return (
-    <main className="mx-auto max-w-6xl px-6">
-      <header className="flex items-center justify-between py-6">
-        <div className="flex items-center gap-2 font-semibold tracking-tight">
-          <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-brand-foreground">
-            <Gavel className="h-4 w-4" />
-          </span>
-          Chemical Auction
+    <div className="min-h-screen bg-background">
+      {/* ── Nav ── */}
+      <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-3.5">
+          <div className="flex items-center gap-2">
+            <LogoTile className="h-8 w-8 rounded-[9px]" />
+            <span className="font-display text-lg font-bold tracking-tight">ChemiBid</span>
+          </div>
+          <nav className="flex items-center gap-2">
+            <Link href="/login" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>
+              Log in
+            </Link>
+            <Link href="/signup" className={cn(buttonVariants({ size: 'sm' }))}>
+              Create account
+            </Link>
+          </nav>
         </div>
-        <nav className="flex items-center gap-2">
-          <Link href="/login" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>
-            Log in
-          </Link>
-          <Link href="/signup" className={cn(buttonVariants({ variant: 'brand', size: 'sm' }))}>
-            Create account
-          </Link>
-        </nav>
       </header>
 
-      <section className="py-16 sm:py-24">
-        <p className="mb-4 inline-flex items-center rounded-full border border-brand/20 bg-brand/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand">
-          B2B chemical procurement · India
-        </p>
-        <h1 className="max-w-3xl text-balance text-4xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl">
-          The six-call scramble, turned into a structured, auditable, blind reverse auction.
-        </h1>
-        <p className="mt-6 max-w-2xl text-lg leading-relaxed text-muted-foreground">
-          Buyers post a precise requirement. Qualified sellers bid blindly and competitively. A
-          two-stage negotiation settles the price — and every action is recorded for good.
-        </p>
-        <div className="mt-8 flex flex-wrap gap-3">
-          <Link href="/signup" className={cn(buttonVariants({ variant: 'brand', size: 'lg' }))}>
-            Get started — verify your GSTIN <ArrowRight className="h-4 w-4" />
-          </Link>
-          <Link href="/login" className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}>
-            I already have an account
-          </Link>
-        </div>
-      </section>
-
-      <section className="grid gap-4 pb-4 sm:grid-cols-3">
-        {STEPS.map((s) => (
-          <div key={s.n} className="rounded-xl border border-border/70 bg-card p-6 shadow-sm">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand/10 text-sm font-bold text-brand">
-              {s.n}
+      <main className="mx-auto max-w-6xl px-6">
+        {/* ── Hero ── */}
+        <section className="grid items-center gap-12 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
+          <Reveal>
+            <span className="inline-flex items-center rounded-full border border-brand/20 bg-brand/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand">
+              B2B chemical procurement · India
             </span>
-            <h2 className="mt-4 font-semibold tracking-tight">{s.title}</h2>
-            <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
-          </div>
-        ))}
-      </section>
+            <h1 className="mt-5 text-balance font-display text-4xl font-extrabold leading-[1.04] tracking-tight sm:text-[56px]">
+              The six-call scramble, turned into a structured, auditable, blind reverse auction.
+            </h1>
+            <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
+              Buyers post a precise requirement. Qualified sellers bid blindly and competitively. A
+              two-stage negotiation settles the price — and every action is recorded for good.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Link href="/signup" className={cn(buttonVariants({ size: 'lg' }))}>
+                Get started — verify your GSTIN <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link href="/login" className={cn(buttonVariants({ variant: 'outline', size: 'lg' }))}>
+                I already have an account
+              </Link>
+            </div>
+            <div className="mt-7 flex items-center gap-2 text-sm text-muted-foreground">
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full bg-success/10 text-success">
+                <Check className="h-3 w-3" strokeWidth={3} />
+              </span>
+              12,400+ GST-verified businesses trading
+            </div>
+          </Reveal>
 
-      <section className="grid gap-4 py-16 sm:grid-cols-2">
-        {FEATURES.map((f) => (
-          <div
-            key={f.title}
-            className="rounded-xl border border-border/70 bg-card p-6 shadow-sm transition-shadow hover:shadow-md"
-          >
-            <f.icon className="h-6 w-6 text-brand" />
-            <h2 className="mt-4 font-semibold tracking-tight">{f.title}</h2>
-            <p className="mt-2 text-sm leading-relaxed text-muted-foreground">{f.body}</p>
-          </div>
-        ))}
-      </section>
+          {/* Signature visual: the Blind Board */}
+          <Reveal delay={120} className="lg:justify-self-end">
+            <div className="animate-floaty rounded-2xl bg-graphite p-7 text-white shadow-card-lg">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="livedot inline-block h-2 w-2 rounded-full bg-live" />
+                  <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">
+                    Live · your blind rank
+                  </span>
+                </div>
+                <span className="text-xs tabular-nums text-white/45">updated 4m ago</span>
+              </div>
+              <div className="mt-4 flex items-baseline gap-2">
+                <span className="font-display text-[72px] font-extrabold leading-none tabular-nums">
+                  #3
+                </span>
+                <span className="text-xl font-medium text-white/55">/ 6 sellers</span>
+              </div>
+              <div className="my-5 h-px bg-white/10" />
+              <p className="text-[13.5px] leading-relaxed text-white/70">
+                Ranked by lowest total rate. You never see a rival’s price, and rivals never see
+                you — only your own blind rank. Lower your total before close to climb.
+              </p>
+              <div className="mt-5 flex items-center gap-3 rounded-xl bg-white/[0.06] p-3">
+                <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-live/15 text-live">
+                  <LogoMark className="h-4 w-4" />
+                </span>
+                <div className="text-[13px]">
+                  <div className="font-medium text-white">Toluene · 99% min</div>
+                  <div className="tabular-nums text-white/50">10 MT · Ex-Works Bharuch</div>
+                </div>
+              </div>
+            </div>
+          </Reveal>
+        </section>
 
-      <footer className="flex flex-wrap items-center justify-between gap-3 border-t py-6 text-sm text-muted-foreground">
-        <span>© Two Clicks Media</span>
-        <div className="flex gap-4">
-          <Link href="/privacy" className="hover:text-foreground">
-            Privacy
-          </Link>
-          <Link href="/terms" className="hover:text-foreground">
-            Terms
-          </Link>
+        {/* ── How it works ── */}
+        <section className="py-12">
+          <Reveal>
+            <h2 className="font-display text-2xl font-bold tracking-tight">How it works</h2>
+          </Reveal>
+          <div className="mt-8 grid gap-5 sm:grid-cols-3">
+            {STEPS.map((s, i) => (
+              <Reveal key={s.n} delay={i * 90}>
+                <div className="relative h-full rounded-2xl bg-card p-6 shadow-card">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-graphite font-display text-sm font-bold text-live">
+                    {s.n}
+                  </span>
+                  <h3 className="mt-4 font-display text-lg font-bold tracking-tight">{s.title}</h3>
+                  <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{s.body}</p>
+                </div>
+              </Reveal>
+            ))}
+          </div>
+        </section>
+
+        {/* ── Why it's different (bento) ── */}
+        <section className="py-12">
+          <Reveal>
+            <h2 className="max-w-2xl font-display text-3xl font-bold tracking-tight">
+              Built for procurement that needs proof, not promises.
+            </h2>
+          </Reveal>
+          <div className="mt-8 grid gap-5 lg:grid-cols-3">
+            {/* Big dark feature — the one bold moment */}
+            <Reveal className="lg:col-span-2">
+              <div className="flex h-full flex-col justify-between rounded-2xl bg-graphite p-7 text-white shadow-card">
+                <div>
+                  <h3 className="font-display text-xl font-bold tracking-tight">
+                    Blind reverse auctions
+                  </h3>
+                  <p className="mt-2 max-w-md text-sm leading-relaxed text-white/65">
+                    Qualified sellers compete to your exact spec. Each sees only their own rank,
+                    never a competitor’s price or identity. Price discovery without the leak.
+                  </p>
+                </div>
+                <div className="mt-6 space-y-2">
+                  {[
+                    { rank: '#1', label: 'Seller A', mine: false },
+                    { rank: '#2', label: 'Seller B', mine: false },
+                    { rank: '#3', label: 'You', mine: true },
+                  ].map((r) => (
+                    <div
+                      key={r.rank}
+                      className={cn(
+                        'flex items-center gap-3 rounded-lg px-3 py-2 text-sm',
+                        r.mine ? 'bg-live/15 text-white' : 'bg-white/[0.05] text-white/55',
+                      )}
+                    >
+                      <span className="font-display font-bold tabular-nums">{r.rank}</span>
+                      <span className={r.mine ? 'font-medium' : ''}>{r.label}</span>
+                      <span className="ml-auto tabular-nums">
+                        {r.mine ? '₹1,14,000 / MT' : '••••••'}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </Reveal>
+
+            {/* Three stacked small features */}
+            <div className="grid gap-5">
+              {[
+                {
+                  icon: ShieldCheck,
+                  title: 'GST-verified identity',
+                  body: 'Every counterparty is a real, tax-registered business. Legal name and address come straight from the GST network.',
+                },
+                {
+                  icon: Search,
+                  title: 'CAS-precise targeting',
+                  body: 'Requirements are anchored to a CAS number, purity and quantity — only sellers who actually carry it get notified.',
+                },
+                {
+                  icon: FileLock2,
+                  title: 'Append-only audit trail',
+                  body: 'Every bid, counter, accept and close is recorded immutably. Always a clear record of why a deal was struck.',
+                },
+              ].map((f, i) => (
+                <Reveal key={f.title} delay={i * 80}>
+                  <div className="h-full rounded-2xl bg-card p-5 shadow-card">
+                    <span className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-brand/10 text-brand">
+                      <f.icon className="h-[18px] w-[18px]" />
+                    </span>
+                    <h3 className="mt-3 font-display text-base font-bold tracking-tight">
+                      {f.title}
+                    </h3>
+                    <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">{f.body}</p>
+                  </div>
+                </Reveal>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── CTA band ── */}
+        <section className="py-12">
+          <Reveal>
+            <div className="flex flex-col items-start gap-6 rounded-2xl bg-brand p-8 text-white shadow-card sm:flex-row sm:items-center sm:justify-between sm:p-10">
+              <div>
+                <h2 className="font-display text-2xl font-bold tracking-tight text-white">
+                  Verify your GSTIN and post your first requirement.
+                </h2>
+                <p className="mt-2 text-sm text-white/80">
+                  Setup takes minutes. Qualified sellers bid to your spec the same day.
+                </p>
+              </div>
+              <Link
+                href="/signup"
+                className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-white px-6 py-3 text-sm font-semibold text-brand transition-colors hover:bg-white/90"
+              >
+                Get started <ArrowRight className="h-4 w-4" />
+              </Link>
+            </div>
+          </Reveal>
+        </section>
+      </main>
+
+      {/* ── Footer ── */}
+      <footer className="border-t border-border">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3 px-6 py-7 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <LogoTile className="h-6 w-6 rounded-md" />
+            <span className="font-display font-bold tracking-tight text-foreground">ChemiBid</span>
+            <span className="ml-2">© Two Clicks Media</span>
+          </div>
+          <div className="flex gap-5">
+            <Link href="/privacy" className="hover:text-foreground">
+              Privacy
+            </Link>
+            <Link href="/terms" className="hover:text-foreground">
+              Terms
+            </Link>
+          </div>
         </div>
       </footer>
-    </main>
+    </div>
   );
 }

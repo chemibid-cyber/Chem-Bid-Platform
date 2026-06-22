@@ -23,7 +23,7 @@ export default function AcceptInvitePage({
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-muted/30 px-4">
       <div className="mb-6 flex items-center gap-2 font-semibold">
-        <Gavel className="h-5 w-5" /> Chemical Auction
+        <Gavel className="h-5 w-5" /> ChemiBid
       </div>
       <Card className="w-full max-w-md">
         <CardHeader>

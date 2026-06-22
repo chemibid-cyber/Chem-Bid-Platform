@@ -96,8 +96,8 @@ export async function registerPartnerAction(
   if (parsed.data.partnerEmail) {
     await sendEmail({
       to: parsed.data.partnerEmail,
-      subject: `${company.legalName} wants to source ${casNumber} from you on Chemical Auction`,
-      html: `<p><strong>${company.legalName}</strong> registered your company as a preferred supplier for CAS <strong>${casNumber}</strong> on Chemical Auction.</p><p>Create your verified account to receive their requirements: <a href="${appUrl}/signup">${appUrl}/signup</a></p>`,
+      subject: `${company.legalName} wants to source ${casNumber} from you on ChemiBid`,
+      html: `<p><strong>${company.legalName}</strong> registered your company as a preferred supplier for CAS <strong>${casNumber}</strong> on ChemiBid.</p><p>Create your verified account to receive their requirements: <a href="${appUrl}/signup">${appUrl}/signup</a></p>`,
       text: `${company.legalName} registered you as a supplier for CAS ${casNumber}. Join: ${appUrl}/signup`,
     });
   }

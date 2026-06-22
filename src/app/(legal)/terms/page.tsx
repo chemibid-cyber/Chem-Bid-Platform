@@ -8,7 +8,7 @@ export default function TermsPage() {
 
       <h2>1. Who we are</h2>
       <p>
-        Chemical Auction is operated by Two Clicks Media (&quot;the Platform&quot;). The Platform
+        ChemiBid is operated by Two Clicks Media (&quot;the Platform&quot;). The Platform
         provides a venue for verified businesses to discover prices for chemical procurement through
         structured reverse auctions. The Platform is not a party to any transaction between buyers
         and sellers.

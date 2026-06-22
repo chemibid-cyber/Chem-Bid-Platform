@@ -2,8 +2,8 @@
 
 import { useFormState } from 'react-dom';
 import Link from 'next/link';
-import { Gavel } from 'lucide-react';
 import { updatePasswordAction } from '../actions';
+import { LogoTile } from '@/components/brand/logo';
 import { SubmitButton } from '@/components/submit-button';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
@@ -25,9 +25,7 @@ export function ResetPasswordForm({ tokenHash, type }: { tokenHash: string; type
   return (
     <Card className="mx-auto max-w-md">
       <CardHeader>
-        <span className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-[13px] bg-graphite text-live">
-          <Gavel className="h-[22px] w-[22px]" />
-        </span>
+        <LogoTile className="mb-3 h-11 w-11 rounded-[13px]" />
         <CardTitle className="font-display text-2xl tracking-tight">
           Choose a new password
         </CardTitle>

@@ -3,7 +3,7 @@
 @tailwind utilities;
 
 /*
- * Design tokens — Chemical Auction design language ("the trading desk").
+ * Design tokens — ChemiBid design language ("the trading desk").
  * Subject-true colour: graphite ink, one assay-green for "verified / proceed",
  * amber = caution, brick = stop. Lab-datasheet white surfaces on mineral paper.
  * HSL channels so Tailwind can alpha-blend them.
@@ -130,6 +130,24 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .livedot {
+      animation: none;
+    }
+  }
+  /* Gentle float for the landing hero visual. */
+  @keyframes floaty {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-8px);
+    }
+  }
+  .animate-floaty {
+    animation: floaty 6s ease-in-out infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-floaty {
       animation: none;
     }
   }

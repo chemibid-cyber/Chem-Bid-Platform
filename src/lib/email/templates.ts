@@ -2,7 +2,7 @@
  * Transactional email templates. Plain, dependency-free HTML so it renders in
  * every client. All amounts/labels are passed in; nothing here invents data.
  */
-const APP = 'Chemical Auction';
+const APP = 'ChemiBid';
 
 function layout(title: string, body: string): string {
   return `<!doctype html><html><body style="margin:0;background:#f6f7f9;font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;color:#0f172a">

@@ -1,6 +1,5 @@
 import Link from 'next/link';
 import {
-  Gavel,
   Bell,
   ChevronDown,
   BadgeCheck,
@@ -11,6 +10,7 @@ import {
   Tag,
   Wrench,
 } from 'lucide-react';
+import { LogoTile } from '@/components/brand/logo';
 import { AppNav, type NavItem } from '@/components/app/app-nav';
 import { ModeToggle } from '@/components/app/mode-toggle';
 import { ProfileMenu } from '@/components/app/profile-menu';
@@ -100,11 +100,9 @@ export function AppHeader({
     <header className="sticky top-0 z-30 border-b border-border bg-card">
       <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5">
         <Link href="/dashboard" className="flex items-center gap-2">
-          <span className="inline-flex h-7 w-7 items-center justify-center rounded-lg bg-graphite text-live">
-            <Gavel className="h-4 w-4" />
-          </span>
+          <LogoTile className="h-7 w-7" />
           <span className="hidden font-display text-[15px] font-bold tracking-tight sm:inline">
-            Chemical Auction
+            ChemiBid
           </span>
         </Link>
 

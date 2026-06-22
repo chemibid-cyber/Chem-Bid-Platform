@@ -273,7 +273,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: { 
 
       {/* Subtle wordmark footer for cohesion */}
       <div className="flex items-center gap-1.5 pt-2 text-xs text-muted-foreground/70">
-        <Gavel className="h-3.5 w-3.5" /> Chemical Auction
+        <Gavel className="h-3.5 w-3.5" /> ChemiBid
       </div>
     </div>
   );
