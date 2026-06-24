@@ -171,4 +171,63 @@
       animation: none;
     }
   }
+  /* Commodities ticker-tape marquee (content is duplicated, so -50% loops seamlessly). */
+  @keyframes ticker {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
+  }
+  .animate-ticker {
+    animation: ticker 38s linear infinite;
+  }
+  /* Rank number flips up when it changes (on the live Blind Board). */
+  @keyframes rankpop {
+    0% {
+      transform: translateY(45%);
+      opacity: 0;
+    }
+    100% {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+  .animate-rankpop {
+    animation: rankpop 0.45s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  /* Slow drift for the molecular hex-lattice backdrop. */
+  @keyframes hexdrift {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0);
+    }
+    50% {
+      transform: translate3d(-18px, 12px, 0);
+    }
+  }
+  .animate-hexdrift {
+    animation: hexdrift 22s ease-in-out infinite;
+  }
+  /* A bid row flashing as a fresh bid lands. */
+  @keyframes bidflash {
+    0% {
+      background-color: hsl(var(--live) / 0.22);
+    }
+    100% {
+      background-color: hsl(0 0% 100% / 0.05);
+    }
+  }
+  .animate-bidflash {
+    animation: bidflash 0.9s ease-out;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .animate-ticker,
+    .animate-rankpop,
+    .animate-hexdrift,
+    .animate-bidflash {
+      animation: none;
+    }
+  }
 }

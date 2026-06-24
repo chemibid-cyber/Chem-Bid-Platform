@@ -1,8 +1,11 @@
 import Link from 'next/link';
 import { ShieldCheck, Search, FileLock2, ArrowRight, Check } from 'lucide-react';
 import { buttonVariants } from '@/components/ui/button';
-import { LogoMark, LogoTile } from '@/components/brand/logo';
+import { LogoTile } from '@/components/brand/logo';
 import { Reveal } from '@/components/brand/reveal';
+import { LiveBoard } from '@/components/brand/live-board';
+import { Ticker } from '@/components/brand/ticker';
+import { HexField } from '@/components/brand/hex-field';
 import { cn } from '@/lib/utils';
 
 const STEPS = [
@@ -44,19 +47,21 @@ export default function LandingPage() {
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-6">
-        {/* ── Hero ── */}
-        <section className="grid items-center gap-12 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
+      {/* ── Hero (with drifting molecular backdrop) ── */}
+      <section className="relative overflow-hidden">
+        <HexField />
+        <div className="relative mx-auto grid max-w-6xl items-center gap-12 px-6 py-16 lg:grid-cols-[1.05fr_0.95fr] lg:py-24">
           <Reveal>
             <span className="inline-flex items-center rounded-full border border-brand/20 bg-brand/5 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-brand">
               B2B chemical procurement · India
             </span>
-            <h1 className="mt-5 text-balance font-display text-4xl font-extrabold leading-[1.04] tracking-tight sm:text-[56px]">
-              The six-call scramble, turned into a structured, auditable, blind reverse auction.
+            <h1 className="mt-5 text-balance font-display text-5xl font-extrabold leading-[1.02] tracking-tight sm:text-6xl lg:text-[4.75rem]">
+              Price discovery, without the leak.
             </h1>
             <p className="mt-6 max-w-xl text-lg leading-relaxed text-muted-foreground">
-              Buyers post a precise requirement. Qualified sellers bid blindly and competitively. A
-              two-stage negotiation settles the price — and every action is recorded for good.
+              The six-call scramble, turned into a structured, auditable, blind reverse auction.
+              Qualified sellers bid competitively — each sees only their own rank, never a rival’s
+              price.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
               <Link href="/signup" className={cn(buttonVariants({ size: 'lg' }))}>
@@ -74,44 +79,19 @@ export default function LandingPage() {
             </div>
           </Reveal>
 
-          {/* Signature visual: the Blind Board */}
+          {/* The signature: a live blind auction */}
           <Reveal delay={120} className="lg:justify-self-end">
-            <div className="animate-floaty rounded-2xl bg-graphite p-7 text-white shadow-card-lg">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span className="livedot inline-block h-2 w-2 rounded-full bg-live" />
-                  <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-white/55">
-                    Live · your blind rank
-                  </span>
-                </div>
-                <span className="text-xs tabular-nums text-white/45">updated 4m ago</span>
-              </div>
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="font-display text-[72px] font-extrabold leading-none tabular-nums">
-                  #3
-                </span>
-                <span className="text-xl font-medium text-white/55">/ 6 sellers</span>
-              </div>
-              <div className="my-5 h-px bg-white/10" />
-              <p className="text-[13.5px] leading-relaxed text-white/70">
-                Ranked by lowest total rate. You never see a rival’s price, and rivals never see
-                you — only your own blind rank. Lower your total before close to climb.
-              </p>
-              <div className="mt-5 flex items-center gap-3 rounded-xl bg-white/[0.06] p-3">
-                <span className="inline-flex h-8 w-8 items-center justify-center rounded-lg bg-live/15 text-live">
-                  <LogoMark className="h-4 w-4" />
-                </span>
-                <div className="text-[13px]">
-                  <div className="font-medium text-white">Toluene · 99% min</div>
-                  <div className="tabular-nums text-white/50">10 MT · Ex-Works Bharuch</div>
-                </div>
-              </div>
-            </div>
+            <LiveBoard />
           </Reveal>
-        </section>
+        </div>
+      </section>
 
+      {/* ── Live ticker tape (full-bleed band) ── */}
+      <Ticker />
+
+      <main className="mx-auto max-w-6xl px-6">
         {/* ── How it works ── */}
-        <section className="py-12">
+        <section className="py-14">
           <Reveal>
             <h2 className="font-display text-2xl font-bold tracking-tight">How it works</h2>
           </Reveal>
@@ -131,14 +111,13 @@ export default function LandingPage() {
         </section>
 
         {/* ── Why it's different (bento) ── */}
-        <section className="py-12">
+        <section className="py-14">
           <Reveal>
             <h2 className="max-w-2xl font-display text-3xl font-bold tracking-tight">
               Built for procurement that needs proof, not promises.
             </h2>
           </Reveal>
           <div className="mt-8 grid gap-5 lg:grid-cols-3">
-            {/* Big dark feature — the one bold moment */}
             <Reveal className="lg:col-span-2">
               <div className="flex h-full flex-col justify-between rounded-2xl bg-graphite p-7 text-white shadow-card">
                 <div>
@@ -174,7 +153,6 @@ export default function LandingPage() {
               </div>
             </Reveal>
 
-            {/* Three stacked small features */}
             <div className="grid gap-5">
               {[
                 {
@@ -210,7 +188,7 @@ export default function LandingPage() {
         </section>
 
         {/* ── CTA band ── */}
-        <section className="py-12">
+        <section className="py-14">
           <Reveal>
             <div className="flex flex-col items-start gap-6 rounded-2xl bg-brand p-8 text-white shadow-card sm:flex-row sm:items-center sm:justify-between sm:p-10">
               <div>
