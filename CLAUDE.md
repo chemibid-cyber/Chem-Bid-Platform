@@ -285,6 +285,17 @@ User-mandated changes (product owner instructions; §2 fences NOT crossed — bi
 
 **Microsoft Clarity + Tidio live (commits `4d35bdf` + `660b4ec`).** User asked for analytics + live-chat on the app; IDs fetched from the dashboards via the Browser 1 / chemibid Chrome (both were logged out → user logged in; I cannot authenticate on their behalf). Single `src/components/analytics.tsx` (next/script, `afterInteractive`) rendered from the root layout, on every page. **Clarity** project "ChemiBid" ID `x6jr2l0x4m`; **Tidio** public key `sgx7ice0rvy70napbxpubgb1um36m5hy`. **Decision:** both are PUBLIC client keys (they ship in the page HTML), so they're baked in as defaults (a `NEXT_PUBLIC_CLARITY_ID`/`NEXT_PUBLIC_TIDIO_KEY` env var overrides) — ships live on `git push` with no Vercel env step and no silent-missing-key failure mode. Gated to `NODE_ENV==='production'` so localhost dev sessions don't pollute Clarity/Tidio. Verified LIVE on app.chemibid.com (Tidio bubble renders + `tidioChatApi` booted; `window.clarity` fn + `clarity.ms/tag/x6jr2l0x4m` injected). NOTE: Clarity data lags up to ~2h; Tidio on a 5-day trial as of 2026-06-17. Dashboards/keys recorded in auto-memory `analytics-chat-widgets`. typecheck + build (35 routes) + 78 tests green.
 
+### 2026-06-25 — Marketing landing fully redesigned ("Molten" design language)
+
+User-directed redesign of the public landing at `/` (`src/app/page.tsx`); design-first process (showed full-page mockups + a 4-direction design-panel for the hero board, user picked the gauge direction) then built. **Scope discipline:** the entire landing is self-contained under a `.cb-land` wrapper class — Molten palette (ink `#15100C`, molten `#FF5A1F`, amber `#FFB020`) + Space Grotesk / JetBrains Mono / Inter, all in a `.cb-land`-prefixed block appended to `globals.css`. The authenticated app's theme tokens (the existing design language) are **untouched** — verified no authed screen changed. Fonts loaded via a `<link>` in `layout.tsx` alongside the app's Fontshare fonts (woff2 only download where referenced).
+
+- **Hero signature = `LiveBoard` rebuilt as a "blind rank gauge"** (`src/components/brand/live-board.tsx`): circular "3 of 6" rank meter + your-bid + live countdown; rivals shown sealed/locked by design. SSR-visible default, reduced-motion-safe, hydration-clean (no `Date.now`/random in initial render). `Reveal` gained an optional `style` prop.
+- **Sections** (research-informed, two-sided): WhatsApp six-call-scramble problem → 4-step how-it-works → For buyers → For sellers → comparison vs the old way → trust/security → free (₹0) pricing → FAQ (keeps "a confirmed deal is a record, not a legal contract") → CTA → rich footer (Product/Company/Legal + GST-verified badge).
+- **Honesty pass:** removed the fabricated "12,400+ businesses" stat and the indicative price ticker (both confirmed absent in live HTML). Customer-logo strip = clearly-marked placeholders pending real files from the user.
+- **Removed** unused `ticker.tsx` + `hex-field.tsx` (landing-only). Added `.claude/launch.json` (Preview MCP dev-server config for `npm run dev`).
+- **Verified:** typecheck + build (29 routes) + 84 unit tests green; live on desktop + mobile via Preview MCP (no console errors, 0 reveal elements stuck hidden); deploy success on `app.chemibid.com`. Commit `6644f51`.
+- **Open follow-ups (not blockers):** (1) real customer logos to replace placeholders; (2) For-buyers/For-sellers want a few real product screenshots (currently benefit cards); (3) PWA install icons still carry the old mark.
+
 ## 10. Blocked / needs human (append-only)
 
 _(empty — record real blockers here; do NOT resolve by violating §2)_
@@ -301,7 +312,7 @@ _(empty — record real blockers here; do NOT resolve by violating §2)_
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **Chemical Auction App** (798 symbols, 2056 relationships, 57 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **Chemical Auction App** (1266 symbols, 3434 relationships, 89 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -397,22 +408,5 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 | Rename / extract / split / refactor | `.claude/skills/gitnexus/gitnexus-refactoring/SKILL.md` |
 | Tools, resources, schema reference | `.claude/skills/gitnexus/gitnexus-guide/SKILL.md` |
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
-| Work in the App area (25 symbols) | `.claude/skills/generated/app/SKILL.md` |
-| Work in the Catalog area (19 symbols) | `.claude/skills/generated/catalog/SKILL.md` |
-| Work in the Requests area (19 symbols) | `.claude/skills/generated/requests/SKILL.md` |
-| Work in the Email area (18 symbols) | `.claude/skills/generated/email/SKILL.md` |
-| Work in the Auth area (18 symbols) | `.claude/skills/generated/auth/SKILL.md` |
-| Work in the Gst area (18 symbols) | `.claude/skills/generated/gst/SKILL.md` |
-| Work in the [id] area (18 symbols) | `.claude/skills/generated/id/SKILL.md` |
-| Work in the Operator area (14 symbols) | `.claude/skills/generated/operator/SKILL.md` |
-| Work in the Notifications area (13 symbols) | `.claude/skills/generated/notifications/SKILL.md` |
-| Work in the Auctions area (11 symbols) | `.claude/skills/generated/auctions/SKILL.md` |
-| Work in the Cas area (11 symbols) | `.claude/skills/generated/cas/SKILL.md` |
-| Work in the Scripts area (10 symbols) | `.claude/skills/generated/scripts/SKILL.md` |
-| Work in the Auction area (8 symbols) | `.claude/skills/generated/auction/SKILL.md` |
-| Work in the Export area (8 symbols) | `.claude/skills/generated/export/SKILL.md` |
-| Work in the Members area (8 symbols) | `.claude/skills/generated/members/SKILL.md` |
-| Work in the (auth) area (7 symbols) | `.claude/skills/generated/auth-2/SKILL.md` |
-| Work in the Cluster_4 area (4 symbols) | `.claude/skills/generated/cluster-4/SKILL.md` |
 
 <!-- gitnexus:end -->
