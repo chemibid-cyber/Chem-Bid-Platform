@@ -10,13 +10,18 @@ export function Reveal({
   children,
   className,
   delay = 0,
+  style,
 }: {
   children: React.ReactNode;
   className?: string;
   delay?: number;
+  style?: React.CSSProperties;
 }) {
   return (
-    <div className={cn('reveal', className)} style={delay ? { animationDelay: `${delay}ms` } : undefined}>
+    <div
+      className={cn('reveal', className)}
+      style={delay ? { animationDelay: `${delay}ms`, ...style } : style}
+    >
       {children}
     </div>
   );

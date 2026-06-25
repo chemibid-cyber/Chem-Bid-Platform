@@ -231,3 +231,237 @@
     }
   }
 }
+
+/* ============================================================================
+ * ChemiBid marketing landing — "Molten" design language. FULLY SCOPED under
+ * `.cb-land` so it never touches the authenticated app's theme tokens. Dark
+ * ink canvas, one electric molten accent, amber signal. Space Grotesk (display),
+ * JetBrains Mono (numbers/labels), Inter (body).
+ * ========================================================================== */
+.cb-land {
+  --ink: #15100c;
+  --ink2: #1f1812;
+  --ink3: #2a2118;
+  --ink-soft: #1a140f;
+  --paper: #f8f5f1;
+  --paper2: #ffffff;
+  --molten: #ff5a1f;
+  --molten2: #e04a12;
+  --amber: #ffb020;
+  --tx: #1a140f;
+  --mut: #6e6155;
+  --ptx: #f4eee7;
+  --pmut: rgba(244, 238, 231, 0.55);
+  --pfaint: rgba(244, 238, 231, 0.3);
+  --line: rgba(22, 16, 10, 0.1);
+  --iline: rgba(244, 238, 231, 0.12);
+  --sg: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', monospace;
+  --body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+
+  font-family: var(--body);
+  color: var(--tx);
+  background: var(--paper);
+  -webkit-font-smoothing: antialiased;
+}
+.cb-land ::selection {
+  background: rgba(255, 90, 31, 0.22);
+  color: var(--ink);
+}
+
+/* Layout */
+.cb-land .cb-wrap {
+  width: 100%;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+.cb-land .cb-sec {
+  padding: 60px 24px;
+}
+@media (min-width: 1024px) {
+  .cb-land .cb-sec {
+    padding: 84px 24px;
+  }
+}
+
+/* Type */
+.cb-land .cb-disp {
+  font-family: var(--sg);
+}
+.cb-land .cb-mono {
+  font-family: var(--mono);
+}
+.cb-land .cb-kick {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+.cb-land .cb-h2 {
+  font-family: var(--sg);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.05;
+}
+.cb-land .cb-lead {
+  color: var(--mut);
+  font-size: 15px;
+  line-height: 1.65;
+}
+
+/* Buttons */
+.cb-land .cb-btn {
+  font-family: var(--sg);
+  font-weight: 500;
+  font-size: 14px;
+  border-radius: 9px;
+  padding: 12px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition:
+    background-color 0.16s ease,
+    border-color 0.16s ease,
+    transform 0.16s ease,
+    color 0.16s ease;
+}
+.cb-land .cb-btn:active {
+  transform: scale(0.985);
+}
+.cb-land .cb-btn--molten {
+  background: var(--molten);
+  color: #1a0e06;
+}
+.cb-land .cb-btn--molten:hover {
+  background: #ff6b34;
+}
+.cb-land .cb-btn--ghost {
+  background: transparent;
+  border-color: var(--iline);
+  color: var(--ptx);
+}
+.cb-land .cb-btn--ghost:hover {
+  background: rgba(244, 238, 231, 0.06);
+  border-color: rgba(244, 238, 231, 0.24);
+}
+.cb-land .cb-btn--outline {
+  background: transparent;
+  border-color: var(--line);
+  color: var(--tx);
+}
+.cb-land .cb-btn--outline:hover {
+  background: rgba(22, 16, 10, 0.04);
+}
+.cb-land .cb-btn--dark {
+  background: var(--ink);
+  color: var(--molten);
+}
+.cb-land .cb-btn--dark:hover {
+  background: #221a12;
+}
+
+/* Pieces */
+.cb-land .cb-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 7px;
+  padding: 5px 11px;
+  font-size: 11px;
+  font-weight: 500;
+}
+.cb-land .cb-pill {
+  font-family: var(--mono);
+  font-weight: 500;
+  font-size: 11px;
+  color: var(--mut);
+  background: var(--paper2);
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  padding: 5px 10px;
+}
+.cb-land .cb-card {
+  background: var(--paper2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.cb-land .cb-navlink {
+  font-size: 13px;
+  color: var(--pmut);
+  text-decoration: none;
+  transition: color 0.16s ease;
+}
+.cb-land .cb-navlink:hover {
+  color: var(--ptx);
+}
+
+/* Hero: stack on small, two columns on large */
+.cb-land .cb-hero-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 40px;
+  align-items: center;
+}
+@media (min-width: 1024px) {
+  .cb-land .cb-hero-grid {
+    grid-template-columns: 1.05fr 0.95fr;
+    gap: 48px;
+  }
+}
+.cb-land .cb-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 14px;
+}
+@media (min-width: 640px) {
+  .cb-land .cb-grid-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+.cb-land .cb-nav-links {
+  display: none;
+}
+@media (min-width: 880px) {
+  .cb-land .cb-nav-links {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+}
+
+/* Live dot pulse on the board */
+@keyframes cb-livepulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.72);
+  }
+}
+.cb-land .cb-livedot {
+  animation: cb-livepulse 1.8s ease-in-out infinite;
+}
+
+/* Gauge arc wipes in once on load (molten dash is length 50.6, final offset -113.5) */
+@keyframes cb-gauge-draw {
+  from {
+    stroke-dashoffset: -62.9;
+  }
+}
+.cb-land .cb-gauge-arc {
+  animation: cb-gauge-draw 0.9s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cb-land .cb-livedot,
+  .cb-land .cb-gauge-arc {
+    animation: none;
+  }
+}
